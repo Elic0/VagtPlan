@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="VagtPlan.ApiService/ApiService.csproj" />
+  <Project Path="VagtPlan.AppHost/VagtPlan.AppHost.csproj" />
+  <Project Path="VagtPlan.ServiceDefaults/VagtPlan.ServiceDefaults.csproj" />
+  <Project Path="VagtPlan.Web/VagtPlan.Web.csproj" />
+</Solution>

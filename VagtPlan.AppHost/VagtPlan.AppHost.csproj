@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>013a4cdf-2e6f-4786-97d9-100f8fee0eb8</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VagtPlan.ApiService\ApiService.csproj" />
+    <ProjectReference Include="..\VagtPlan.Web\VagtPlan.Web.csproj" />
+  </ItemGroup>
+
+</Project>
