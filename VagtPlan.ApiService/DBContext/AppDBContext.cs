@@ -9,5 +9,11 @@ namespace ApiService.DBContext
         {
         }
         public DbSet<Models.User> Users { get; set; }
+        public DbSet<Models.Department> Departments { get; set; }
+        public DbSet<Models.Workday> Workdays { get; set; }
+        public DbSet<Models.Wish> Wishes { get; set; }
+        public DbSet<Models.Substitute> Substitutes { get; set; }
+        public DbSet<Models.Status> Statuses { get; set; }
+        public DbSet<Models.WorkTime> WorkTimes { get; set; }
     }
 }

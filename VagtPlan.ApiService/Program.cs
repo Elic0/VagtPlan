@@ -1,6 +1,6 @@
 using ApiService.Controllers;
 using ApiService.DBContext;
-// using ApiService.Services;
+using ApiService.Services;
 using ApiService.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -66,7 +66,7 @@ public class Program
 
         // JWT Authentication setup
         // Registrer JWT Service
-        // builder.Services.AddScoped<JwtService>();
+        builder.Services.AddScoped<JwtService>();
 
         // Konfigurer JWT Authentication
         var jwtSecretKey = Configuration["Jwt:SecretKey"]
@@ -110,8 +110,8 @@ public class Program
             options.AddPolicy("AllowFlutterApp", policy =>
             {
                 policy.WithOrigins(
-                        "https://h4-flutter.mercantec.tech",
-                        "https://h4-api.mercantec.tech"
+                        "https://vagtplan.dk",
+                        "https://vagtplan.dk"
                     )
                     .AllowAnyMethod()               // Allow GET, POST, PUT, DELETE, etc.
                     .AllowAnyHeader()               // Allow any headers
