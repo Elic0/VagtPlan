@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Api" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\VagtPlan.ServiceDefaults\VagtPlan.ServiceDefaults.csproj" />
   </ItemGroup>
 

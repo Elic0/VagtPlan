@@ -55,7 +55,6 @@ namespace ApiService.Controllers
                 return NotFound(); 
             }
 
-            wish.Date = wishDTO.Date;
             wish.DayOfWeek = wishDTO.DayOfWeek;
             wish.StatusId = wishDTO.StatusId;
             wish.UserId = wishDTO.UserId;
@@ -85,7 +84,6 @@ namespace ApiService.Controllers
         {
             var wish = new Wish
             {
-                Date = wishDTO.Date,
                 DayOfWeek = wishDTO.DayOfWeek,
                 StatusId = wishDTO.StatusId,
                 UserId = wishDTO.UserId
