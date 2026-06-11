@@ -1,0 +1,258 @@
+@page "/departments/{DepartmentId:int}/edit"
+@rendermode InteractiveServer
+@inject DepartmentApiClient DepartmentApi
+@inject WorkTimeApiClient WorkTimeApi
+@inject NavigationManager Navigation
+
+<PageTitle>@(_department?.Name ?? "Afdeling") — Arbejdstider</PageTitle>
+
+<div class="edit-page">
+    <nav class="breadcrumb">
+        <a href="/departments">Afdelinger</a>
+        <span class="sep">/</span>
+        <span>@(_department?.Name ?? "…")</span>
+    </nav>
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Henter data…</span>
+        </div>
+    }
+    else if (_department is null)
+    {
+        <div class="alert-banner">Afdelingen blev ikke fundet.</div>
+        <a href="/departments" class="back-link">← Tilbage til afdelinger</a>
+    }
+    else
+    {
+        <header class="page-header">
+            <div>
+                <p class="page-eyebrow">Arbejdstider</p>
+                <h1>@_department.Name</h1>
+                <p class="page-subtitle">Tilføj og administrer ugentlige arbejdstider for denne afdeling.</p>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert-banner" role="alert">@_error</div>
+        }
+
+        <section class="card-panel">
+            <h2>@(_editingWorkTimeId.HasValue ? "Rediger arbejdstid" : "Tilføj arbejdstid")</h2>
+
+            <EditForm Model="_workTimeForm" OnValidSubmit="SaveWorkTimeAsync" class="worktime-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label for="weekday">Ugedag</label>
+                        <InputSelect id="weekday" @bind-Value="_workTimeForm.DayOfWeek" class="field-input">
+                            @foreach (var day in _weekdays)
+                            {
+                                <option value="@day">@day</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="start">Starttid</label>
+                        <input type="time" id="start" class="field-input" @bind="_workTimeForm.StartTime" @bind:format="HH:mm" />
+                    </div>
+
+                    <div class="field-group">
+                        <label for="end">Sluttid</label>
+                        <input type="time" id="end" class="field-input" @bind="_workTimeForm.EndTime" @bind:format="HH:mm" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    @if (_editingWorkTimeId.HasValue)
+                    {
+                        <button type="button" class="btn-secondary" @onclick="CancelEdit">Annuller</button>
+                    }
+                    <button type="submit" class="btn-primary-action" disabled="@_isSaving">
+                        @(_isSaving ? "Gemmer…" : _editingWorkTimeId.HasValue ? "Gem ændringer" : "Tilføj arbejdstid")
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+
+        <section class="card-panel">
+            <div class="panel-heading">
+                <h2>Planlagte tider</h2>
+                <span class="count-badge">@_workTimes.Length</span>
+            </div>
+
+            @if (_workTimes.Length == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">◷</div>
+                    <p>Ingen arbejdstider endnu</p>
+                    <span>Tilføj den første arbejdstid ovenfor.</span>
+                </div>
+            }
+            else
+            {
+                <div class="worktime-list">
+                    @foreach (var workTime in _workTimes)
+                    {
+                        <article class="worktime-row @( _editingWorkTimeId == workTime.Id ? "editing" : "" )">
+                            <div class="worktime-day">@workTime.DayOfWeek</div>
+                            <div class="worktime-hours">
+                                <span class="time-label">@workTime.StartTime.ToString("HH:mm")</span>
+                                <span class="time-sep">→</span>
+                                <span class="time-label">@workTime.EndTime.ToString("HH:mm")</span>
+                            </div>
+                            <div class="worktime-actions">
+                                <button class="btn-icon" title="Rediger" @onclick="() => StartEdit(workTime)">✎</button>
+                                <button class="btn-icon danger" title="Slet" @onclick="() => DeleteWorkTimeAsync(workTime.Id)" disabled="@_isSaving">✕</button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int DepartmentId { get; set; }
+
+    private static readonly string[] _weekdays =
+    [
+        "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"
+    ];
+
+    private DepartmentModel? _department;
+    private WorkTimeModel[] _workTimes = [];
+    private WorkTimeDto _workTimeForm = new()
+    {
+        DayOfWeek = "Mandag",
+        StartTime = new TimeOnly(8, 0),
+        EndTime = new TimeOnly(16, 0)
+    };
+    private int? _editingWorkTimeId;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            _department = await DepartmentApi.GetByIdAsync(DepartmentId);
+            if (_department is not null)
+            {
+                _workTimes = await WorkTimeApi.GetByDepartmentAsync(DepartmentId);
+                _workTimeForm.DepartmentId = DepartmentId;
+            }
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke hente data. Tjek at API'et kører.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveWorkTimeAsync()
+    {
+        if (_workTimeForm.EndTime <= _workTimeForm.StartTime)
+        {
+            _error = "Sluttid skal være efter starttid.";
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            if (_editingWorkTimeId.HasValue)
+            {
+                await WorkTimeApi.UpdateAsync(_editingWorkTimeId.Value, _workTimeForm);
+            }
+            else
+            {
+                await WorkTimeApi.CreateAsync(_workTimeForm);
+            }
+
+            ResetForm();
+            _workTimes = await WorkTimeApi.GetByDepartmentAsync(DepartmentId);
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke gemme arbejdstid.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void StartEdit(WorkTimeModel workTime)
+    {
+        _editingWorkTimeId = workTime.Id;
+        _workTimeForm = new WorkTimeDto
+        {
+            DepartmentId = workTime.DepartmentId,
+            DayOfWeek = workTime.DayOfWeek,
+            StartTime = workTime.StartTime,
+            EndTime = workTime.EndTime
+        };
+        _error = null;
+    }
+
+    private void CancelEdit() => ResetForm();
+
+    private void ResetForm()
+    {
+        _editingWorkTimeId = null;
+        _workTimeForm = new WorkTimeDto
+        {
+            DepartmentId = DepartmentId,
+            DayOfWeek = "Mandag",
+            StartTime = new TimeOnly(8, 0),
+            EndTime = new TimeOnly(16, 0)
+        };
+    }
+
+    private async Task DeleteWorkTimeAsync(int id)
+    {
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await WorkTimeApi.DeleteAsync(id);
+            if (_editingWorkTimeId == id)
+            {
+                ResetForm();
+            }
+
+            _workTimes = await WorkTimeApi.GetByDepartmentAsync(DepartmentId);
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke slette arbejdstid.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}
