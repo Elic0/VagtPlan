@@ -1,0 +1,165 @@
+﻿@page "/role/{RoleId:int}/edit"
+@using VagtPlan.Web.Models
+@using VagtPlan.Web.Services
+@inject UserRoleApiClient UserRoleApi
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>@(_userRole?.Name ?? "Rolle") — Rediger</PageTitle>
+
+<div class="edit-page">
+    <nav class="breadcrumb">
+        <a href="/role">Rolle håndtering</a>
+        <span class="sep">/</span>
+        <span>@(_userRole?.Name ?? "…")</span>
+    </nav>
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Henter data…</span>
+        </div>
+    }
+    else if (_userRole is null)
+    {
+        <div class="alert-banner">Rollen blev ikke fundet.</div>
+        <a href="/role" class="back-link">← Tilbage til rolle håndtering</a>
+    }
+    else
+    {
+        <header class="page-header">
+            <div>
+                <p class="page-eyebrow">Vagtplan</p>
+                <h1>@_userRole.Name</h1>
+                <p class="page-subtitle">Rediger navnet på denne rolle.</p>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert-banner" role="alert">@_error</div>
+        }
+
+        <section class="card-panel">
+            <h2>Rediger rolle</h2>
+
+            <EditForm Model="_form" OnValidSubmit="SaveRoleAsync" class="create-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-row">
+                    <div class="field-group">
+                        <label for="role-name">Navn</label>
+                        <InputText id="role-name" @bind-Value="_form.Name" class="field-input" />
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" @onclick="Cancel">Annuller</button>
+                        <button type="submit" class="btn-primary-action" disabled="@_isSaving">@(_isSaving ? "Gemmer…" : "Gem ændringer")</button>
+                    </div>
+                </div>
+            </EditForm>
+        </section>
+
+        <section class="card-panel">
+            <div class="panel-heading">
+                <h2>Fjern rolle</h2>
+            </div>
+            <p>Hvis du sletter rollen, vil den ikke længere være tilgængelig ved tildeling til brugere.</p>
+            <div class="form-actions">
+                <button class="btn-secondary" @onclick="Cancel">Tilbage</button>
+                <button class="btn-delete" @onclick="DeleteRoleAsync" disabled="@_isSaving">Slet rolle</button>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int RoleId { get; set; }
+
+    private UserRoleModel? _userRole;
+    private UserRoleDto _form = new() { Name = string.Empty };
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            _userRole = await UserRoleApi.GetByIdAsync(RoleId);
+            if (_userRole is not null)
+            {
+                _form.Name = _userRole.Name;
+            }
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke hente rolle. Tjek at API'et kører.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/role");
+
+    private async Task SaveRoleAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Navn må ikke være tomt.";
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserRoleApi.UpdateAsync(RoleId, _form);
+            Navigation.NavigateTo("/role");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke gemme rolle.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteRoleAsync()
+    {
+        var confirmed = true;
+        if (!confirmed) return;
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserRoleApi.DeleteAsync(RoleId);
+            Navigation.NavigateTo("/role");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke slette rolle.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

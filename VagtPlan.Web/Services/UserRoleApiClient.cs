@@ -1,0 +1,40 @@
+﻿using System.Net.Http.Json;
+using VagtPlan.Web.Models;
+
+
+namespace VagtPlan.Web.Services
+{
+    public class UserRoleApiClient(HttpClient httpClient)
+    {
+        public async Task<UserRoleModel[]> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            var userRoles = await httpClient.GetFromJsonAsync<UserRoleModel[]>("api/UserRole/get", cancellationToken);
+            return userRoles ?? [];
+        }
+
+        public async Task<UserRoleModel?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await httpClient.GetFromJsonAsync<UserRoleModel>($"api/UserRole/get/{id}", cancellationToken);
+        }
+
+        public async Task<UserRoleModel?> CreateAsync(UserRoleDto dto, CancellationToken cancellationToken = default)
+        {
+            var response = await httpClient.PostAsJsonAsync("api/UserRole/createUserRole", dto, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<UserRoleModel>(cancellationToken);
+        }
+
+        public async Task<UserRoleModel?> UpdateAsync(int id, UserRoleDto dto, CancellationToken cancellationToken = default)
+        {
+            var response = await httpClient.PutAsJsonAsync($"api/UserRole/edit/{id}", dto, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<UserRoleModel>(cancellationToken);
+        }
+
+        public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var response = await httpClient.DeleteAsync($"api/UserRole/delete/{id}", cancellationToken);
+            response.EnsureSuccessStatusCode();
+        }
+    }
+}

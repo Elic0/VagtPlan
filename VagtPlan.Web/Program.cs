@@ -22,6 +22,11 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.DepartmentApiClient>(client
         client.BaseAddress = new("https+http://apiservice");
     });
 
+builder.Services.AddHttpClient<VagtPlan.Web.Services.UserRoleApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice/");
+    });
+
 builder.Services.AddHttpClient<VagtPlan.Web.Services.WorkTimeApiClient>(client =>
     {
         client.BaseAddress = new("https+http://apiservice");
