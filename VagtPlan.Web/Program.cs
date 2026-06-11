@@ -27,6 +27,20 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.UserRoleApiClient>(client =
         client.BaseAddress = new("https+http://apiservice/");
     });
 
+builder.Services.AddHttpClient<VagtPlan.Web.Services.UserApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    });
+
+// Ensure UserApiClient can be resolved directly from DI as well
+builder.Services.AddScoped<VagtPlan.Web.Services.UserApiClient>(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var client = factory.CreateClient();
+    client.BaseAddress = new("https+http://apiservice");
+    return new VagtPlan.Web.Services.UserApiClient(client);
+});
+
 builder.Services.AddHttpClient<VagtPlan.Web.Services.WorkTimeApiClient>(client =>
     {
         client.BaseAddress = new("https+http://apiservice");
