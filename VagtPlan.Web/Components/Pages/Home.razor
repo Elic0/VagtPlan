@@ -1,7 +1,59 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>VagtPlan</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="home-hero">
+    <p class="hero-eyebrow">Vagtplanlægning</p>
+    <h1>Velkommen til VagtPlan</h1>
+    <p class="hero-text">Administrer afdelinger og arbejdstider — grundlaget for din vagtplan.</p>
+    <a href="/departments" class="hero-cta">Gå til afdelinger →</a>
+</div>
 
-Welcome to your new app.
+<style>
+    .home-hero {
+        max-width: 560px;
+        padding: 3rem 0;
+    }
+
+    .hero-eyebrow {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #8b9cb8;
+        margin: 0 0 0.75rem;
+    }
+
+    .home-hero h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #0f172a;
+        margin: 0 0 1rem;
+    }
+
+    .hero-text {
+        color: #64748b;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin: 0 0 2rem;
+    }
+
+    .hero-cta {
+        display: inline-block;
+        padding: 0.85rem 1.75rem;
+        background: linear-gradient(135deg, #1e3a5f 0%, #2d4a73 100%);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .hero-cta:hover {
+        box-shadow: 0 4px 16px rgba(30, 58, 95, 0.3);
+        color: #fff;
+    }
+</style>
