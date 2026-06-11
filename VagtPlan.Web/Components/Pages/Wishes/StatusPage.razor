@@ -1,0 +1,187 @@
+﻿@page "/statuses"
+@rendermode InteractiveServer
+@using VagtPlan.Web.Services
+@inject StatusService StatusService
+@inject IJSRuntime JS
+
+<h3>Statuses</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="() => showCreate = !showCreate">@((showCreate) ? "Cancel" : "New Status")</button>
+</div>
+
+@if (showCreate)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Create Status</h5>
+            <div class="mb-2">
+                <label class="form-label">Name</label>
+                <input class="form-control" @bind="newStatus.Name" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Colour</label>
+                <div class="input-group" style="max-width:360px;">
+                    <input type="color" class="form-control form-control-color" style="width:48px; padding:0;" @bind="newStatus.Colour" />
+                    <input class="form-control" @bind="newStatus.Colour" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="availableCreate" @bind="newStatus.IsAvailable" />
+                <label class="form-check-label" for="availableCreate">Is Available</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="defaultCreate" @bind="newStatus.Default" />
+                <label class="form-check-label" for="defaultCreate">Default</label>
+            </div>
+            <button class="btn btn-success" @onclick="CreateStatusAsync">Create</button>
+        </div>
+    </div>
+}
+
+@if (editingStatus != null)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Edit Status (@editingStatus.Name)</h5>
+            <div class="mb-2">
+                <label class="form-label">Name</label>
+                <input class="form-control" @bind="editModel.Name" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Colour</label>
+                <div class="input-group" style="max-width:360px;">
+                    <input type="color" class="form-control form-control-color" style="width:48px; padding:0;" @bind="editModel.Colour" />
+                    <input class="form-control" @bind="editModel.Colour" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="availableEdit" @bind="editModel.IsAvailable" />
+                <label class="form-check-label" for="availableEdit">Is Available</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="defaultEdit" @bind="editModel.Default" />
+                <label class="form-check-label" for="defaultEdit">Default</label>
+            </div>
+            <button class="btn btn-primary me-2" @onclick="UpdateStatusAsync">Save</button>
+            <button class="btn btn-secondary" @onclick="() => editingStatus = null">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (statuses == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!statuses.Any())
+{
+    <p>No statuses found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Colour</th>
+                <th>Available</th>
+                <th>Default</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in statuses)
+            {
+                <tr>
+                    <td>@s.Name</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:24px; height:24px; background:@s.Colour; border:1px solid #ccc"></div>
+                            <span>@s.Colour</span>
+                        </div>
+                    </td>
+                    <td>@(s.IsAvailable ? "Yes" : "No")</td>
+                    <td>@(s.Default ? "Yes" : "No")</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(s)">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteStatusAsync(s)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<StatusDto>? statuses;
+    private bool showCreate;
+
+    private StatusRequest newStatus = new StatusRequest { Colour = "#ffffff" };
+
+    private StatusDto? editingStatus;
+    private StatusRequest editModel = new StatusRequest { Colour = "#ffffff" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatuses();
+    }
+
+    private async Task LoadStatuses()
+    {
+        statuses = (await StatusService.GetAllAsync()).OrderBy(s => s.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private async Task CreateStatusAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newStatus.Colour)) newStatus.Colour = "#ffffff";
+        // ensure leading #
+        if (!newStatus.Colour.StartsWith("#")) newStatus.Colour = "#" + newStatus.Colour;
+
+        var created = await StatusService.CreateAsync(newStatus);
+        if (created != null)
+        {
+            newStatus = new StatusRequest { Colour = "#ffffff" };
+            showCreate = false;
+            await LoadStatuses();
+        }
+    }
+
+    private void StartEdit(StatusDto s)
+    {
+        editingStatus = s;
+        editModel = new StatusRequest
+        {
+            Name = s.Name,
+            Colour = string.IsNullOrWhiteSpace(s.Colour) ? "#ffffff" : s.Colour,
+            IsAvailable = s.IsAvailable,
+            Default = s.Default
+        };
+    }
+
+    private async Task UpdateStatusAsync()
+    {
+        if (editingStatus == null) return;
+
+        if (string.IsNullOrWhiteSpace(editModel.Colour)) editModel.Colour = "#ffffff";
+        if (!editModel.Colour.StartsWith("#")) editModel.Colour = "#" + editModel.Colour;
+
+        var ok = await StatusService.UpdateAsync(editingStatus.Id, editModel);
+        if (ok)
+        {
+            editingStatus = null;
+            await LoadStatuses();
+        }
+    }
+
+    private async Task DeleteStatusAsync(StatusDto s)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete status '{s.Name}'?");
+        if (!confirmed) return;
+
+        var ok = await StatusService.DeleteAsync(s.Id);
+        if (ok)
+        {
+            await LoadStatuses();
+        }
+    }
+}

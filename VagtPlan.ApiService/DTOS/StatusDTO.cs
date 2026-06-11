@@ -1,6 +1,6 @@
-﻿namespace ApiService.Models
+﻿namespace ApiService.DTOS
 {
-    public class Status : Common
+    public class StatusDTO
     {
         public required string Name { get; set; }
         public required string Colour { get; set; }

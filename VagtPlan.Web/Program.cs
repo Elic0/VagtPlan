@@ -1,5 +1,6 @@
 using VagtPlan.Web;
 using VagtPlan.Web.Components;
+using VagtPlan.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,27 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
         // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
         client.BaseAddress = new("https+http://apiservice");
     });
+
+// StatusService: HTTP client configured with ApiBaseUrl from configuration (or fallback)
+builder.Services.AddHttpClient<StatusService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+// WishService
+builder.Services.AddHttpClient<WishService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+// Simple user client for selecting users
+builder.Services.AddHttpClient<UserService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
 
 var app = builder.Build();
 
