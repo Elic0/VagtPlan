@@ -1,82 +1,324 @@
-:root {
-    --bg: #F9F8F7;
-    --surface: #FFFFFF;
-    --border: #E8E5E2;
-    --border-strong: #D4D0CC;
-    --text-primary: #18181B;
-    --text-secondary: #6B7280;
-    --text-muted: #A1A1AA;
-    --accent: #2563EB;
-    --accent-subtle: #EFF6FF;
-    --danger: #DC2626;
-    --danger-subtle: #FEF2F2;
-    --radius: 8px;
-    --radius-lg: 12px;
-}
-
-.vp-page {
-    max-width: 800px;
-    padding: 2.5rem 2rem 4rem;
-    margin: 0 auto;
-}
-
-.vp-home {
-    padding-top: 3rem;
-}
+/* ── Header shell ── */
 
 .vp-header {
-    margin-bottom: 1.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d4a73 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset,
+                0 4px 20px rgba(10, 25, 50, 0.22);
 }
 
-.vp-eyebrow {
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin: 0 0 0.35rem;
+.vp-header-surface {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 55% 90% at 8% -10%, rgba(255, 255, 255, 0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 80% at 95% 110%, rgba(0, 0, 0, 0.2) 0%, transparent 55%);
 }
 
-.vp-home .vp-header h1 {
-    font-size: 1.9rem;
+.vp-header-container {
+    position: relative;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.vp-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    gap: 1.5rem;
+}
+
+/* ── Brand ── */
+
+.vp-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    text-decoration: none;
+    color: #fff;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.vp-brand:hover {
+    color: #fff;
+    opacity: 0.92;
+}
+
+.vp-brand-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 11px;
+    font-size: 0.95rem;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.vp-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+}
+
+.vp-brand-title {
+    font-size: 1.05rem;
     font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--text-primary);
-    margin: 0 0 0.3rem;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.vp-brand-sub {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.52);
     line-height: 1.2;
 }
 
-.vp-home .vp-header p {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    margin: 0;
-    max-width: 380px;
-    line-height: 1.5;
+/* ── Desktop navigation ── */
+
+.vp-nav-drawer {
+    display: flex;
+    align-items: center;
 }
 
-.vp-btn {
+.vp-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* NavLink renderes i child-komponent — ::deep kræves for at styles rammer <a> */
+.vp-nav ::deep a.vp-nav-item {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    height: 34px;
-    padding: 0 0.85rem;
-    border-radius: var(--radius);
-    font-size: 0.82rem;
+    gap: 0.45rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9px;
+    font-size: 0.875rem;
     font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: background 0.12s;
+    line-height: 1;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.88);
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
     white-space: nowrap;
-    font-family: inherit;
+}
+
+.vp-nav ::deep a.vp-nav-item i {
+    font-size: 0.95rem;
+    opacity: 0.88;
+}
+
+.vp-nav ::deep a.vp-nav-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
     text-decoration: none;
 }
 
-.vp-btn-primary {
-    background: var(--text-primary);
-    color: #fff;
+.vp-nav ::deep a.vp-nav-item.is-active {
+    background: #fff;
+    color: #1e3a5f;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
 }
 
-.vp-btn-primary:hover {
-    background: #27272A;
-    color: #fff;
+.vp-nav ::deep a.vp-nav-item.is-active i {
+    opacity: 1;
+}
+
+/* ── Mobile menu button (hidden on desktop) ── */
+
+.vp-menu-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    z-index: 202;
+    transition: background 0.15s;
+}
+
+.vp-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.vp-menu-btn-bar {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: transform 0.22s ease, opacity 0.22s ease, width 0.22s ease;
+}
+
+.vp-menu-btn.is-open .vp-menu-btn-bar:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.vp-menu-btn.is-open .vp-menu-btn-bar:nth-child(2) {
+    opacity: 0;
+    width: 0;
+}
+
+.vp-menu-btn.is-open .vp-menu-btn-bar:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+.vp-nav-backdrop {
+    display: none;
+}
+
+/* ── Mobile layout ── */
+
+@media (max-width: 768px) {
+    .vp-header {
+        background: #fff;
+        box-shadow: 0 1px 0 #e2e8f0, 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    .vp-header-surface {
+        display: none;
+    }
+
+    .vp-header-container {
+        padding: 0 1rem;
+    }
+
+    .vp-header-row {
+        height: 60px;
+        position: relative;
+    }
+
+    .vp-brand,
+    .vp-brand:hover {
+        color: #1e3a5f;
+    }
+
+    .vp-brand-title {
+        color: #1e3a5f;
+    }
+
+    .vp-brand-sub {
+        color: #64748b;
+    }
+
+    .vp-brand-icon {
+        background: linear-gradient(135deg, #1e3a5f 0%, #2d4a73 100%);
+        border-color: transparent;
+        color: #fff;
+    }
+
+    .vp-menu-btn {
+        display: flex;
+        background: #f1f5f9;
+        border-color: #d4dce8;
+    }
+
+    .vp-menu-btn:hover {
+        background: #e8edf4;
+    }
+
+    .vp-menu-btn-bar {
+        background: #1e3a5f;
+    }
+
+    .vp-nav-drawer {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        display: none;
+        padding: 0.5rem;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18),
+                    0 0 0 1px rgba(15, 23, 42, 0.06);
+        z-index: 201;
+        animation: vpNavDrop 0.22s ease;
+    }
+
+    .vp-nav-drawer.is-open {
+        display: block;
+    }
+
+    .vp-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.25rem;
+    }
+
+    .vp-nav ::deep a.vp-nav-item {
+        padding: 0.85rem 1rem;
+        font-size: 0.95rem;
+        color: #334155;
+        border-radius: 10px;
+    }
+
+    .vp-nav ::deep a.vp-nav-item i {
+        color: #64748b;
+        width: 1.25rem;
+        text-align: center;
+    }
+
+    .vp-nav ::deep a.vp-nav-item:hover {
+        background: #f1f5f9;
+        color: #1e3a5f;
+    }
+
+    .vp-nav ::deep a.vp-nav-item.is-active {
+        background: linear-gradient(135deg, #1e3a5f 0%, #2d4a73 100%);
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(30, 58, 95, 0.28);
+    }
+
+    .vp-nav ::deep a.vp-nav-item.is-active i {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .vp-nav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        top: 60px;
+        background: rgba(15, 23, 42, 0.35);
+        border: none;
+        cursor: pointer;
+        z-index: 199;
+        animation: vpFadeIn 0.2s ease;
+    }
+}
+
+@keyframes vpNavDrop {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes vpFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }

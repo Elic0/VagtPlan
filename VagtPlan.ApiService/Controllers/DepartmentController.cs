@@ -88,6 +88,11 @@ namespace ApiService.Controllers
                 return NotFound();
             }
 
+            var workTimes = await _context.WorkTimes
+                .Where(w => w.DepartmentId == id)
+                .ToListAsync();
+
+            _context.WorkTimes.RemoveRange(workTimes);
             _context.Departments.Remove(department);
             await _context.SaveChangesAsync();
 

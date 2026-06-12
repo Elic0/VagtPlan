@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ApiService.DBContext;
 using ApiService.Models;
 using ApiService.DTOS;
+using ApiService.Helpers;
 
 namespace ApiService.Controllers
 {
@@ -58,6 +59,24 @@ namespace ApiService.Controllers
                 return BadRequest("Department not found.");
             }
 
+            if (workTimeDTO.EndTime <= workTimeDTO.StartTime)
+            {
+                return BadRequest("Sluttid skal være efter starttid.");
+            }
+
+            var existingForDepartment = await _context.WorkTimes
+                .Where(w => w.DepartmentId == workTimeDTO.DepartmentId)
+                .ToListAsync();
+
+            if (WorkTimeOverlapHelper.HasOverlap(
+                existingForDepartment,
+                workTimeDTO.DayOfWeek,
+                workTimeDTO.StartTime,
+                workTimeDTO.EndTime))
+            {
+                return BadRequest("Arbejdstiden overlapper med en eksisterende tid på samme ugedag.");
+            }
+
             var workTime = new WorkTime
             {
                 DepartmentId = workTimeDTO.DepartmentId,
@@ -79,6 +98,25 @@ namespace ApiService.Controllers
             if (workTime == null)
             {
                 return NotFound();
+            }
+
+            if (workTimeDTO.EndTime <= workTimeDTO.StartTime)
+            {
+                return BadRequest("Sluttid skal være efter starttid.");
+            }
+
+            var existingForDepartment = await _context.WorkTimes
+                .Where(w => w.DepartmentId == workTimeDTO.DepartmentId)
+                .ToListAsync();
+
+            if (WorkTimeOverlapHelper.HasOverlap(
+                existingForDepartment,
+                workTimeDTO.DayOfWeek,
+                workTimeDTO.StartTime,
+                workTimeDTO.EndTime,
+                id))
+            {
+                return BadRequest("Arbejdstiden overlapper med en eksisterende tid på samme ugedag.");
             }
 
             workTime.DepartmentId = workTimeDTO.DepartmentId;

@@ -2,17 +2,43 @@
 
 <PageTitle>VagtPlan</PageTitle>
 
-<div class="home-hero">
-    <p class="hero-eyebrow">Vagtplanlægning</p>
-    <h1>Velkommen til VagtPlan</h1>
-    <p class="hero-text">Administrer afdelinger og arbejdstider — grundlaget for din vagtplan.</p>
-    <a href="/departments" class="hero-cta">Gå til afdelinger →</a>
-</div>
+<div class="home-page">
+    <div class="home-hero">
+        <p class="hero-eyebrow">Vagtplanlægning</p>
+        <h1>Velkommen til VagtPlan</h1>
+        <p class="hero-text">Administrer afdelinger og arbejdstider - Hurtigt og nemt</p>
+        <a href="/departments" class="hero-cta">
+            Gå til afdelinger
+            <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
 
+    <div class="home-features">
+        <article class="feature-card">
+            <div class="feature-icon"><i class="bi bi-building"></i></div>
+            <h3>Afdelinger</h3>
+            <p>Opret og administrer afdelinger for din virksomhed.</p>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon"><i class="bi bi-clock"></i></div>
+            <h3>Arbejdstider</h3>
+            <p>Definer ugentlige arbejdstider for hver afdeling.</p>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon"><i class="bi bi-people"></i></div>
+            <h3>Brugervenlighed</h3>
+            <p>Hurtigt, nemt og effektivt at bruge for enhver.</p>
+        </article>
+    </div>
+</div>
 <style>
+    .home-page {
+        padding: 1rem 0 2rem;
+    }
+
     .home-hero {
         max-width: 560px;
-        padding: 3rem 0;
+        padding: 2rem 0 3rem;
     }
 
     .hero-eyebrow {
@@ -30,6 +56,7 @@
         letter-spacing: -0.03em;
         color: #0f172a;
         margin: 0 0 1rem;
+        line-height: 1.15;
     }
 
     .hero-text {
@@ -40,7 +67,9 @@
     }
 
     .hero-cta {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         padding: 0.85rem 1.75rem;
         background: linear-gradient(135deg, #1e3a5f 0%, #2d4a73 100%);
         color: #fff;
@@ -49,11 +78,63 @@
         font-weight: 600;
         font-size: 0.95rem;
         box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
-        transition: transform 0.15s, box-shadow 0.15s;
+        transition: box-shadow 0.15s, transform 0.15s;
     }
 
     .hero-cta:hover {
-        box-shadow: 0 4px 16px rgba(30, 58, 95, 0.3);
         color: #fff;
+        background: linear-gradient(135deg, #284e7a 0%, #375d8e 100%);
+        }
+
+    .home-features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+
+    .feature-card {
+        background: #fff;
+        border: 1px solid #e8edf4;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+
+    .feature-icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef2f8;
+        color: #1e3a5f;
+        border-radius: 12px;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0 0 0.35rem;
+    }
+
+    .feature-card p {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    @@media (max-width: 768px) {
+        .home-features {
+            grid-template-columns: 1fr;
+        }
+
+        .home-hero h1 {
+            font-size: 2rem;
+        }
     }
 </style>
+

@@ -10,7 +10,7 @@
         <div>
             <p class="page-eyebrow">Vagtplan</p>
             <h1>Afdelinger</h1>
-            <p class="page-subtitle">Opret afdelinger og administrer mødetider for hver afdeling.</p>
+            <p class="page-subtitle">Opret afdelinger og administrer arbejdstider for hver afdeling.</p>
         </div>
     </header>
 
@@ -26,7 +26,10 @@
             <div class="form-row">
                 <div class="field-group">
                     <label for="dept-name">Navn</label>
-                    <InputText id="dept-name" @bind-Value="_newDepartment.Name" class="field-input" placeholder="Afdelings navn" />
+                    <div class="field-text-wrapper">
+                        <span class="field-icon"><i class="bi bi-building"></i></span>
+                        <InputText id="dept-name" @bind-Value="_newDepartment.Name" class="field-input field-input-icon" placeholder="Afdelingens navn" />
+                    </div>
                 </div>
                 <button type="submit" class="btn-primary-action" disabled="@_isSaving">
                     @(_isSaving ? "Opretter…" : "Opret afdeling")
@@ -51,7 +54,7 @@
         else if (_departments.Length == 0)
         {
             <div class="empty-state">
-                <div class="empty-icon">◎</div>
+                <div class="empty-icon"><i class="bi bi-building"></i></div>
                 <p>Ingen afdelinger endnu</p>
                 <span>Opret din første afdeling ovenfor.</span>
             </div>
@@ -63,14 +66,16 @@
                 {
                     <article class="department-card">
                         <div class="department-card-body">
-@*                             <span class="department-id">#@department.Id</span> // Department-ID vises her.
- *@                            <h3>@department.Name</h3>
+                            <div class="department-icon"><i class="bi bi-building"></i></div>
+                            <h3>@department.Name</h3>
                         </div>
                         <div class="department-card-actions">
                             <button class="btn-edit" @onclick="() => NavigateToEdit(department.Id)">
-                                Rediger arbejdstider
+                                <i class="bi bi-clock"></i>
+                                Arbejdstider
                             </button>
-                            <button class="btn-delete" @onclick="() => DeleteDepartmentAsync(department.Id)" disabled="@_isSaving">
+                            <button class="btn-delete" @onclick="() => RequestDeleteDepartment(department)" disabled="@_isSaving">
+                                <i class="bi bi-trash3"></i>
                                 Slet
                             </button>
                         </div>
@@ -81,12 +86,24 @@
     </section>
 </div>
 
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet afdeling?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet afdeling"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteDepartmentAsync"
+    OnCancel="CancelDelete" />
+
 @code {
     private DepartmentModel[] _departments = [];
     private DepartmentDto _newDepartment = new() { Name = string.Empty };
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _error;
+    private bool _showDeleteConfirm;
+    private int? _pendingDeleteId;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -138,19 +155,40 @@
         }
     }
 
-    private async Task DeleteDepartmentAsync(int id)
+    private void RequestDeleteDepartment(DepartmentModel department)
     {
+        _pendingDeleteId = department.Id;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette afdelingen \"{department.Name}\"? Alle tilknyttede arbejdstider slettes også. Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteId = null;
+    }
+
+    private async Task ConfirmDeleteDepartmentAsync()
+    {
+        if (!_pendingDeleteId.HasValue)
+        {
+            return;
+        }
+
         _isSaving = true;
         _error = null;
 
         try
         {
-            await DepartmentApi.DeleteAsync(id);
+            await DepartmentApi.DeleteAsync(_pendingDeleteId.Value);
             await LoadDepartmentsAsync();
+            _showDeleteConfirm = false;
+            _pendingDeleteId = null;
         }
         catch (Exception)
         {
-            _error = "Kunne ikke slette afdeling. Den kan være i brug.";
+            _error = "Kunne ikke slette afdeling. Den kan stadig være i brug.";
+            _showDeleteConfirm = false;
         }
         finally
         {
