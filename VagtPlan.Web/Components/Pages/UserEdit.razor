@@ -1,6 +1,9 @@
 ﻿@page "/users/{UserId:int}"
 @inject UserApiClient UserApi
+@inject DepartmentApiClient DepartmentApi
+@inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@using VagtPlan.Web.Models
 @rendermode InteractiveServer
 
 <PageTitle>@(_user?.Name ?? "Bruger") - Rediger</PageTitle>
@@ -51,12 +54,24 @@
                         <InputText id="user-name" @bind-Value="_form.Name" class="field-input" />
                     </div>
                     <div class="field-group">
-                        <label for="user-department">Afdeling id</label>
-                        <InputNumber id="user-department" @bind-Value="_form.DepartmentId" class="field-input" />
+                        <label for="user-department">Afdeling</label>
+                        <InputSelect id="user-department" TValue="long" @bind-Value="_form.DepartmentId" class="field-input">
+                            <option value="0" disabled>Vælg afdeling</option>
+                            @foreach (var d in _departments)
+                            {
+                                <option value="@d.Id">@d.Name</option>
+                            }
+                        </InputSelect>
                     </div>
                     <div class="field-group">
-                        <label for="user-role">Rolle id</label>
-                        <InputNumber id="user-role" @bind-Value="_form.UserRoleId" class="field-input" />
+                        <label for="user-role">Rolle</label>
+                        <InputSelect id="user-role" TValue="long" @bind-Value="_form.UserRoleId" class="field-input">
+                            <option value="0" disabled>Vælg rolle</option>
+                            @foreach (var r in _userRoles)
+                            {
+                                <option value="@r.Id">@r.Name</option>
+                            }
+                        </InputSelect>
                     </div>
                     <div class="field-group">
                         <label for="user-vacation">Vaction Dage</label>
@@ -78,6 +93,8 @@
     public int UserId { get; set; }
 
     private UserModel? _user;
+    private DepartmentModel[] _departments = Array.Empty<DepartmentModel>();
+    private UserRoleModel[] _userRoles = Array.Empty<UserRoleModel>();
     private UserDto _form = new UserDto
     {
         Name = string.Empty,
@@ -103,6 +120,8 @@
 
         try
         {
+            _departments = await DepartmentApi.GetAllAsync();
+            _userRoles = await UserRoleApi.GetAllAsync();
             _user = await UserApi.GetByIdAsync(UserId);
             if (_user != null)
             {

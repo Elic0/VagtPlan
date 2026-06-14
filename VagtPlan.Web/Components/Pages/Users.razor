@@ -1,8 +1,11 @@
 ﻿@page "/users"
-@inject HttpClient Http
 @rendermode InteractiveServer
 @inject UserApiClient UserApi
+@inject DepartmentApiClient DepartmentApi
+@inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@using VagtPlan.Web.Models
+@using System.Linq
 
 <div class="users-page">
     <header class="page-header">
@@ -30,11 +33,23 @@
                 </div>
                 <div class="field-group">
                     <label for="user-department">Afdeling</label>
-                    <InputNumber id="user-department" @bind-Value="_newUser.DepartmentId" class="field-input" placeholder="Afdeling ID" />
+                    <InputSelect id="user-department" TValue="long" @bind-Value="_newUser.DepartmentId" class="field-input">
+                        <option value="0" disabled>Vælg afdeling</option>
+                        @foreach (var d in _departments)
+                        {
+                            <option value="@d.Id">@d.Name</option>
+                        }
+                    </InputSelect>
                 </div>
                 <div class="field-group">
                     <label for="user-role">Rolle</label>
-                    <InputNumber id="user-role" @bind-Value="_newUser.UserRoleId" class="field-input" placeholder="Rolle ID" />
+                    <InputSelect id="user-role" TValue="long" @bind-Value="_newUser.UserRoleId" class="field-input">
+                        <option value="0" disabled>Vælg rolle</option>
+                        @foreach (var r in _userRoles)
+                        {
+                            <option value="@r.Id">@r.Name</option>
+                        }
+                    </InputSelect>
                 </div>
                 <div class="field-group">
                     <label for="user-vacation">Vaction Dage</label>
@@ -78,8 +93,8 @@
                     <article class="user-card">
                         <div class="user-card-body">
                             <h3>@user.Name</h3>
-                            <p>Afdeling: @user.DepartmentId</p>
-                            <p>Rolle: @user.UserRoleId</p>
+                            <p>Afdeling: @GetDepartmentName(user.DepartmentId)</p>
+                            <p>Rolle: @GetUserRoleName(user.UserRoleId)</p>
                             <p>Vaction dage: @user.VactionDays</p>
                         </div>
                         <div class="user-card-actions">
@@ -97,6 +112,8 @@
 
 @code {
     private UserModel[] _users = Array.Empty<UserModel>();
+    private DepartmentModel[] _departments = Array.Empty<DepartmentModel>();
+    private UserRoleModel[] _userRoles = Array.Empty<UserRoleModel>();
     private UserDto _newUser = new UserDto {
         Name = string.Empty,
         VactionDays = 0,
@@ -110,6 +127,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadDepartmentsAsync();
+        await LoadUserRolesAsync();
         await LoadUsersAsync();
     }
 
@@ -128,6 +147,45 @@
         {
             _isLoading = false;
         }
+    }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        try
+        {
+            _departments = await DepartmentApi.GetAllAsync();
+        }
+        catch (Exception)
+        {
+            // non-fatal: keep departments empty and show generic error
+            _error ??= "Kunne ikke hente afdelinger.";
+        }
+    }
+
+    private async Task LoadUserRolesAsync()
+    {
+        try
+        {
+            _userRoles = await UserRoleApi.GetAllAsync();
+        }
+        catch (Exception)
+        {
+            _error ??= "Kunne ikke hente roller.";
+        }
+    }
+
+    private string GetDepartmentName(long id)
+    {
+        if (id == 0) return "-";
+        var d = _departments.FirstOrDefault(x => x.Id == id);
+        return d?.Name ?? id.ToString();
+    }
+
+    private string GetUserRoleName(long id)
+    {
+        if (id == 0) return "-";
+        var r = _userRoles.FirstOrDefault(x => x.Id == id);
+        return r?.Name ?? id.ToString();
     }
 
     private async Task CreateUserAsync()
