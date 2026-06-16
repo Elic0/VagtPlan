@@ -119,6 +119,11 @@
         {
             _departments = await DepartmentApi.GetAllAsync();
         }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Du er ikke logget ind. Log ind for at se afdelinger.";
+            Navigation.NavigateTo("/login");
+        }
         catch (Exception)
         {
             _error = "Kunne ikke hente afdelinger. Tjek at API'et kører.";
@@ -144,6 +149,11 @@
             await DepartmentApi.CreateAsync(_newDepartment);
             _newDepartment = new DepartmentDto { Name = string.Empty };
             await LoadDepartmentsAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udlobet. Log ind igen.";
+            Navigation.NavigateTo("/login");
         }
         catch (Exception)
         {
@@ -184,6 +194,12 @@
             await LoadDepartmentsAsync();
             _showDeleteConfirm = false;
             _pendingDeleteId = null;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udlobet. Log ind igen.";
+            _showDeleteConfirm = false;
+            Navigation.NavigateTo("/login");
         }
         catch (Exception)
         {

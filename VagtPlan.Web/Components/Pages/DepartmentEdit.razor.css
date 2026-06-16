@@ -98,12 +98,53 @@
     margin-bottom: 1.25rem;
 }
 
+.form-grid-create {
+    grid-template-columns: 1fr 1fr;
+}
+
+.form-grid-create .weekday-picker {
+    grid-column: 1 / -1;
+}
+
 .form-grid-edit {
     grid-template-columns: 1fr 1fr;
 }
 
 .form-grid-edit .field-group:first-child {
     grid-column: 1 / -1;
+}
+
+.weekday-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.weekday-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.75rem;
+    background: #fafbfc;
+    border: 1px solid #e8edf4;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+}
+
+.weekday-checkbox:has(input:checked) {
+    background: #f0f4fa;
+    border-color: #1e3a5f;
+    color: #1e3a5f;
+}
+
+.weekday-checkbox input {
+    accent-color: #1e3a5f;
+    cursor: pointer;
 }
 
 .form-actions {

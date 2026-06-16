@@ -27,6 +27,13 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.WorkTimeApiClient>(client =
         client.BaseAddress = new("https+http://apiservice");
     });
 
+builder.Services.AddHttpClient<VagtPlan.Web.Services.AuthApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    });
+
+builder.Services.AddScoped<VagtPlan.Web.Services.ApiAuthState>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

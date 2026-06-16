@@ -1,4 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject VagtPlan.Web.Services.ApiAuthState AuthState
+@inject NavigationManager Navigation
 
 <div class="app-shell">
     <NavMenu />
@@ -15,3 +18,56 @@
     <a href="" class="reload">Genindlæs</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    private bool _isFirstRenderComplete;
+
+    protected override void OnInitialized()
+    {
+        AuthState.Changed += HandleAuthChanged;
+    }
+
+    private void HandleAuthChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (_isFirstRenderComplete)
+            {
+                EnforceLogin();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _isFirstRenderComplete = true;
+        EnforceLogin();
+    }
+
+    private void EnforceLogin()
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/').ToLowerInvariant();
+        var isLoginPage = relativePath == "login";
+
+        if (!AuthState.IsAuthenticated && !isLoginPage)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else if (AuthState.IsAuthenticated && isLoginPage)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.Changed -= HandleAuthChanged;
+    }
+}
