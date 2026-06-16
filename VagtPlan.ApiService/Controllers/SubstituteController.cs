@@ -87,8 +87,11 @@ namespace ApiService.Controllers
             var substitute = new Substitute
             {
                 Date = substituteDTO.Date,
+                StartTime = substituteDTO.StartTime,
+                EndTime = substituteDTO.EndTime,
                 SubstitutedName = substituteDTO.SubstitutedName,
-                SubstituteId = substituteDTO.SubstituteId
+                SubstituteId = substituteDTO.SubstituteId,
+                UserId = substituteDTO.UserId
             };
             _context.Substitutes.Add(substitute);
             await _context.SaveChangesAsync();

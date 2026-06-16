@@ -3,6 +3,8 @@
     public class Workday : Common
     {
         public required DateTime Date { get; set; }
+        public required TimeOnly StartTime { get; set; }
+        public required TimeOnly EndTime { get; set; }
         public required int StatusId { get; set; }
         public required int UserId { get; set; }
 

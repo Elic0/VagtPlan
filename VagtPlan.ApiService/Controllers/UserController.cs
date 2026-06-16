@@ -87,7 +87,8 @@ namespace ApiService.Controllers
             {
                 Name = userDTO.Name,
                 VactionDays = userDTO.VactionDays,
-                DepartmentId = userDTO.DepartmentId
+                DepartmentId = userDTO.DepartmentId,
+                UserRoleId = userDTO.UserRoleId
             };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
