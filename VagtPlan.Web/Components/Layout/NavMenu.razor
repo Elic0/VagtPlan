@@ -1,4 +1,7 @@
 ﻿@rendermode InteractiveServer
+@implements IDisposable
+@inject ApiAuthState AuthState
+@inject NavigationManager Navigation
 
 <header class="vp-header">
     <div class="vp-header-surface" aria-hidden="true"></div>
@@ -52,6 +55,15 @@
                         <i class="bi bi-building" aria-hidden="true"></i>
                         <span>Schedule</span>
                     </NavLink>
+                    @if (AuthState.IsAuthenticated)
+                    {
+                        <button type="button" class="vp-nav-item vp-nav-logout" @onclick="Logout" aria-label="Log ud">
+                            <span class="vp-nav-logout-icon" aria-hidden="true">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </span>
+                            <span>Log ud</span>
+                        </button>
+                    }
                 </nav>
             </div>
         </div>
@@ -65,8 +77,30 @@
 
 @code {
     private bool _menuOpen;
-    
+
+    protected override void OnInitialized()
+    {
+        AuthState.Changed += HandleAuthStateChanged;
+    }
+
     private void ToggleMenu() => _menuOpen = !_menuOpen;
     private void CloseMenu() => _menuOpen = false;
+
+    private void Logout()
+    {
+        AuthState.Clear();
+        CloseMenu();
+        Navigation.NavigateTo("/login");
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthState.Changed -= HandleAuthStateChanged;
+    }
 }
 

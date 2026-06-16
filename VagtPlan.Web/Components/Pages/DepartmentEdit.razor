@@ -47,7 +47,7 @@
             <EditForm Model="_workTimeForm" OnValidSubmit="SaveWorkTimeAsync" class="worktime-form">
                 <DataAnnotationsValidator />
 
-                <div class="form-grid @(_editingWorkTimeId.HasValue ? "form-grid-edit" : "")">
+                <div class="form-grid @(_editingWorkTimeId.HasValue ? "form-grid-edit" : "form-grid-create")">
                     @if (_editingWorkTimeId.HasValue)
                     {
                         <div class="field-group">
@@ -61,16 +61,20 @@
                     }
                     else
                     {
-                        <div class="field-group">
-                            <label for="weekday">Ugedag</label>
-                            <div class="field-select-wrapper">
-                                <InputSelect id="weekday" @bind-Value="_workTimeForm.DayOfWeek" class="field-input field-select">
-                                    @foreach (var day in _weekdays)
-                                    {
-                                        <option value="@day">@day</option>
-                                    }
-                                </InputSelect>
+                        <div class="field-group weekday-picker">
+                            <label>Ugedage</label>
+                            <div class="weekday-checkboxes" role="group" aria-label="Vælg ugedage">
+                                @foreach (var day in _creatableWeekdays)
+                                {
+                                    <label class="weekday-checkbox">
+                                        <input type="checkbox"
+                                               checked="@_selectedDays.Contains(day)"
+                                               @onchange="e => ToggleDay(day, e)" />
+                                        <span>@day</span>
+                                    </label>
+                                }
                             </div>
+                            <span class="field-readonly-hint">Vælg én eller flere dage — hver dag oprettes som en separat arbejdstid.</span>
                         </div>
                     }
 
@@ -91,7 +95,7 @@
                         <button type="button" class="btn-secondary" @onclick="CancelEdit">Annuller</button>
                     }
                     <button type="submit" class="btn-primary-action" disabled="@_isSaving">
-                        @(_isSaving ? "Gemmer…" : _editingWorkTimeId.HasValue ? "Gem ændringer" : "Tilføj arbejdstid")
+                        @GetSubmitButtonText()
                     </button>
                 </div>
             </EditForm>
@@ -114,7 +118,7 @@
             else
             {
                 <div class="worktime-list">
-                    @foreach (var workTime in _workTimes)
+                    @foreach (var workTime in GetOrderedWorkTimes())
                     {
                         <article class="worktime-row @( _editingWorkTimeId == workTime.Id ? "editing" : "" )">
                             <div class="worktime-day">@workTime.DayOfWeek</div>
@@ -157,6 +161,11 @@
         "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"
     ];
 
+    private static readonly string[] _creatableWeekdays =
+    [
+        "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag"
+    ];
+
     private DepartmentModel? _department;
     private WorkTimeModel[] _workTimes = [];
     private WorkTimeDto _workTimeForm = new()
@@ -166,6 +175,7 @@
         EndTime = new TimeOnly(16, 0)
     };
     private int? _editingWorkTimeId;
+    private HashSet<string> _selectedDays = new(StringComparer.Ordinal) { "Mandag" };
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _error;
@@ -210,15 +220,39 @@
             return;
         }
 
-        if (WorkTimeOverlapHelper.HasOverlap(
-            _workTimes,
-            _workTimeForm.DayOfWeek,
-            _workTimeForm.StartTime,
-            _workTimeForm.EndTime,
-            _editingWorkTimeId))
+        if (_editingWorkTimeId.HasValue)
         {
-            _error = "Arbejdstiden overlapper med en eksisterende tid på samme ugedag.";
-            return;
+            if (WorkTimeOverlapHelper.HasOverlap(
+                _workTimes,
+                _workTimeForm.DayOfWeek,
+                _workTimeForm.StartTime,
+                _workTimeForm.EndTime,
+                _editingWorkTimeId))
+            {
+                _error = "Arbejdstiden overlapper med en eksisterende tid på samme ugedag.";
+                return;
+            }
+        }
+        else
+        {
+            if (_selectedDays.Count == 0)
+            {
+                _error = "Vælg mindst én ugedag.";
+                return;
+            }
+
+            foreach (var day in GetSelectedDaysInOrder())
+            {
+                if (WorkTimeOverlapHelper.HasOverlap(
+                    _workTimes,
+                    day,
+                    _workTimeForm.StartTime,
+                    _workTimeForm.EndTime))
+                {
+                    _error = $"Arbejdstiden overlapper med en eksisterende tid på {day}.";
+                    return;
+                }
+            }
         }
 
         _isSaving = true;
@@ -232,7 +266,17 @@
             }
             else
             {
-                await WorkTimeApi.CreateAsync(_workTimeForm);
+                foreach (var day in GetSelectedDaysInOrder())
+                {
+                    var dto = new WorkTimeDto
+                    {
+                        DepartmentId = DepartmentId,
+                        DayOfWeek = day,
+                        StartTime = _workTimeForm.StartTime,
+                        EndTime = _workTimeForm.EndTime
+                    };
+                    await WorkTimeApi.CreateAsync(dto);
+                }
             }
 
             ResetForm();
@@ -270,12 +314,56 @@
     private void ResetForm()
     {
         _editingWorkTimeId = null;
+        _selectedDays = new HashSet<string>(StringComparer.Ordinal) { "Mandag" };
         _workTimeForm = new WorkTimeDto
         {
             DepartmentId = DepartmentId,
             DayOfWeek = "Mandag",
             StartTime = new TimeOnly(8, 0),
             EndTime = new TimeOnly(16, 0)
+        };
+    }
+
+    private void ToggleDay(string day, ChangeEventArgs e)
+    {
+        if (e.Value is bool isChecked)
+        {
+            if (isChecked)
+            {
+                _selectedDays.Add(day);
+            }
+            else
+            {
+                _selectedDays.Remove(day);
+            }
+        }
+    }
+
+    private IEnumerable<string> GetSelectedDaysInOrder() =>
+        _creatableWeekdays.Where(_selectedDays.Contains);
+
+    private IEnumerable<WorkTimeModel> GetOrderedWorkTimes() =>
+        _workTimes
+            .OrderBy(w => Array.IndexOf(_weekdays, w.DayOfWeek))
+            .ThenBy(w => w.StartTime);
+
+    private string GetSubmitButtonText()
+    {
+        if (_isSaving)
+        {
+            return "Gemmer…";
+        }
+
+        if (_editingWorkTimeId.HasValue)
+        {
+            return "Gem ændringer";
+        }
+
+        return _selectedDays.Count switch
+        {
+            0 => "Tilføj arbejdstid",
+            1 => "Tilføj arbejdstid",
+            _ => $"Tilføj {_selectedDays.Count} arbejdstider"
         };
     }
 

@@ -28,7 +28,7 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.WorkTimeApiClient>(client =
         client.BaseAddress = new("https+http://apiservice");
     });
 
-// StatusService: HTTP client configured with ApiBaseUrl from configuration (or fallback)
+// StatusService
 builder.Services.AddHttpClient<StatusService>(client =>
 {
     var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
@@ -54,6 +54,13 @@ builder.Services.AddHttpClient<WorkDayService>(client =>
     var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
     client.BaseAddress = new(baseUrl);
 });
+
+builder.Services.AddHttpClient<VagtPlan.Web.Services.AuthApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    });
+
+builder.Services.AddScoped<VagtPlan.Web.Services.ApiAuthState>();
 
 var app = builder.Build();
 
