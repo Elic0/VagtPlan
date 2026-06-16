@@ -1,0 +1,38 @@
+<div class="time-input-24">
+    <div class="time-select-wrap">
+        <select class="time-select" @bind="Hour" @bind:after="NotifyChange" aria-label="Timer">
+            @for (var h = 0; h < 24; h++)
+            {
+                <option value="@h">@h.ToString("00")</option>
+            }
+        </select>
+    </div>
+    <span class="time-colon">:</span>
+    <div class="time-select-wrap">
+        <select class="time-select" @bind="Minute" @bind:after="NotifyChange" aria-label="Minutter">
+            @for (var m = 0; m < 60; m++)
+            {
+                <option value="@m">@m.ToString("00")</option>
+            }
+        </select>
+    </div>
+</div>
+
+@code {
+    [Parameter] public TimeOnly Value { get; set; }
+    [Parameter] public EventCallback<TimeOnly> ValueChanged { get; set; }
+
+    private int Hour
+    {
+        get => Value.Hour;
+        set => Value = new TimeOnly(value, Value.Minute);
+    }
+
+    private int Minute
+    {
+        get => Value.Minute;
+        set => Value = new TimeOnly(Value.Hour, value);
+    }
+
+    private async Task NotifyChange() => await ValueChanged.InvokeAsync(Value);
+}

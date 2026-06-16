@@ -1,0 +1,77 @@
+@page "/login"
+@rendermode InteractiveServer
+@inject AuthApiClient AuthApi
+@inject ApiAuthState AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>Login — VagtPlan</PageTitle>
+
+<div class="login-page">
+    <section class="login-card">
+        <h1>Log ind</h1>
+        <p>Brug admin-kontoen for at tilgå systemet</p>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="login-error" role="alert">@_error</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="LoginAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="field-group">
+                <label for="username">Brugernavn</label>
+                <InputText id="username" class="field-input" @bind-Value="_model.Username" />
+            </div>
+
+            <div class="field-group">
+                <label for="password">Adgangskode</label>
+                <InputText id="password" type="password" class="field-input" @bind-Value="_model.Password" />
+            </div>
+
+            <button type="submit" class="login-btn" disabled="@_isSubmitting">
+                @(_isSubmitting ? "Logger ind..." : "Log ind")
+            </button>
+        </EditForm>
+    </section>
+</div>
+
+@code {
+    private readonly LoginRequestModel _model = new();
+    private bool _isSubmitting;
+    private string? _error;
+
+    private async Task LoginAsync()
+    {
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            var response = await AuthApi.LoginAsync(_model);
+            if (response is null || string.IsNullOrWhiteSpace(response.Token))
+            {
+                _error = "Login fejlede. Tjek brugernavn og adgangskode.";
+                return;
+            }
+
+            AuthState.SetToken(response.Token);
+            Navigation.NavigateTo("/");
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Login fejlede. Tjek brugernavn og adgangskode."
+                : ex.Message;
+        }
+        catch
+        {
+            _error = "Kunne ikke kontakte API'et. Prov igen.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

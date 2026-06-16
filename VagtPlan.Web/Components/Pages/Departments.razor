@@ -1,0 +1,216 @@
+@page "/departments"
+@rendermode InteractiveServer
+@inject DepartmentApiClient DepartmentApi
+@inject NavigationManager Navigation
+
+<PageTitle>Afdelinger — VagtPlan</PageTitle>
+
+<div class="departments-page">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Vagtplan</p>
+            <h1>Afdelinger</h1>
+            <p class="page-subtitle">Opret afdelinger og administrer arbejdstider for hver afdeling.</p>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert-banner" role="alert">@_error</div>
+    }
+
+    <section class="card-panel create-panel">
+        <h2>Opret afdeling</h2>
+        <EditForm Model="_newDepartment" OnValidSubmit="CreateDepartmentAsync" class="create-form">
+            <DataAnnotationsValidator />
+            <div class="form-row">
+                <div class="field-group">
+                    <label for="dept-name">Navn</label>
+                    <div class="field-text-wrapper">
+                        <span class="field-icon"><i class="bi bi-building"></i></span>
+                        <InputText id="dept-name" @bind-Value="_newDepartment.Name" class="field-input field-input-icon" placeholder="Afdelingens navn" />
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary-action" disabled="@_isSaving">
+                    @(_isSaving ? "Opretter…" : "Opret afdeling")
+                </button>
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="card-panel list-panel">
+        <div class="panel-heading">
+            <h2>Alle afdelinger</h2>
+            <span class="count-badge">@_departments.Length</span>
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <span>Henter afdelinger…</span>
+            </div>
+        }
+        else if (_departments.Length == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-building"></i></div>
+                <p>Ingen afdelinger endnu</p>
+                <span>Opret din første afdeling ovenfor.</span>
+            </div>
+        }
+        else
+        {
+            <div class="department-grid">
+                @foreach (var department in _departments)
+                {
+                    <article class="department-card">
+                        <div class="department-card-body">
+                            <div class="department-icon"><i class="bi bi-building"></i></div>
+                            <h3>@department.Name</h3>
+                        </div>
+                        <div class="department-card-actions">
+                            <button class="btn-edit" @onclick="() => NavigateToEdit(department.Id)">
+                                <i class="bi bi-clock"></i>
+                                Arbejdstider
+                            </button>
+                            <button class="btn-delete" @onclick="() => RequestDeleteDepartment(department)" disabled="@_isSaving">
+                                <i class="bi bi-trash3"></i>
+                                Slet
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet afdeling?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet afdeling"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteDepartmentAsync"
+    OnCancel="CancelDelete" />
+
+@code {
+    private DepartmentModel[] _departments = [];
+    private DepartmentDto _newDepartment = new() { Name = string.Empty };
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _error;
+    private bool _showDeleteConfirm;
+    private int? _pendingDeleteId;
+    private string _deleteConfirmMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDepartmentsAsync();
+    }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            _departments = await DepartmentApi.GetAllAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Du er ikke logget ind. Log ind for at se afdelinger.";
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke hente afdelinger. Tjek at API'et kører.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateDepartmentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newDepartment.Name))
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await DepartmentApi.CreateAsync(_newDepartment);
+            _newDepartment = new DepartmentDto { Name = string.Empty };
+            await LoadDepartmentsAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udlobet. Log ind igen.";
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke oprette afdeling.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void RequestDeleteDepartment(DepartmentModel department)
+    {
+        _pendingDeleteId = department.Id;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette afdelingen \"{department.Name}\"? Alle tilknyttede arbejdstider slettes også. Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteId = null;
+    }
+
+    private async Task ConfirmDeleteDepartmentAsync()
+    {
+        if (!_pendingDeleteId.HasValue)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await DepartmentApi.DeleteAsync(_pendingDeleteId.Value);
+            await LoadDepartmentsAsync();
+            _showDeleteConfirm = false;
+            _pendingDeleteId = null;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udlobet. Log ind igen.";
+            _showDeleteConfirm = false;
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke slette afdeling. Den kan stadig være i brug.";
+            _showDeleteConfirm = false;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void NavigateToEdit(int id) => Navigation.NavigateTo($"/departments/{id}/edit");
+}

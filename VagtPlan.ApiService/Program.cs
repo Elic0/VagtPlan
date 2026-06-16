@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using System;
 using System.Reflection;
@@ -42,15 +41,6 @@ public class Program
             {
                 c.IncludeXmlComments(xmlPath);
             }
-
-            // JWT Bearer support for Swagger is intentionally omitted here because the
-            // available Microsoft.OpenApi types in this project don't match the
-            // usual examples (Reference/Models namespace differences). To re-enable
-            // JWT in Swagger, add the proper Microsoft.OpenApi package that provides
-            // `Microsoft.OpenApi.Models` and then use the standard configuration:
-            //
-            // c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme { ... });
-            // c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement { ... });
         });
 
         builder.Services.AddControllers();
@@ -102,7 +92,6 @@ public class Program
 
         builder.Services.AddAuthorization();
         builder.Services.AddOpenApi();
-        builder.Services.AddSwaggerGen();
 
         // Add CORS support for Flutter app
         builder.Services.AddCors(options =>
@@ -175,6 +164,7 @@ public class Program
         // Enable CORS - SKAL være før UseAuthorization
         app.UseCors(app.Environment.IsDevelopment() ? "AllowAllLocalhost" : "AllowFlutterApp");
 
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();
