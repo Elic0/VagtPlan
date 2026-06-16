@@ -12,7 +12,7 @@ public static class WorkTimeOverlapHelper
         string dayOfWeek,
         TimeOnly startTime,
         TimeOnly endTime,
-        long? excludeId = null)
+        int? excludeId = null)
     {
         return existing
             .Where(w => w.DayOfWeek == dayOfWeek && (!excludeId.HasValue || w.Id != excludeId.Value))

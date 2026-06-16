@@ -28,7 +28,7 @@ namespace ApiService.Controllers
         }
 
         [HttpGet("get/{id}")]
-        public async Task<ActionResult<WorkTime>> GetWorkTime([FromRoute] long id)
+        public async Task<ActionResult<WorkTime>> GetWorkTime([FromRoute] int id)
         {
             var workTime = await _context.WorkTimes.FindAsync(id);
 
@@ -41,7 +41,7 @@ namespace ApiService.Controllers
         }
 
         [HttpGet("get/byDepartment/{departmentId}")]
-        public async Task<ActionResult<IEnumerable<WorkTime>>> GetWorkTimesByDepartment([FromRoute] long departmentId)
+        public async Task<ActionResult<IEnumerable<WorkTime>>> GetWorkTimesByDepartment([FromRoute] int departmentId)
         {
             var workTimes = await _context.WorkTimes
                 .Where(w => w.DepartmentId == departmentId)
@@ -94,7 +94,7 @@ namespace ApiService.Controllers
         }
 
         [HttpPut("edit/{id}")]
-        public async Task<IActionResult> EditWorkTime([FromRoute] long id, [FromBody] WorkTimeDTO workTimeDTO)
+        public async Task<IActionResult> EditWorkTime([FromRoute] int id, [FromBody] WorkTimeDTO workTimeDTO)
         {
             var workTime = await _context.WorkTimes.FindAsync(id);
             if (workTime == null)
@@ -144,7 +144,7 @@ namespace ApiService.Controllers
         }
 
         [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> DeleteWorkTime([FromRoute] long id)
+        public async Task<IActionResult> DeleteWorkTime([FromRoute] int id)
         {
             var workTime = await _context.WorkTimes.FindAsync(id);
             if (workTime == null)
@@ -158,7 +158,7 @@ namespace ApiService.Controllers
             return NoContent();
         }
 
-        private bool WorkTimeExists(long id)
+        private bool WorkTimeExists(int id)
         {
             return _context.WorkTimes.Any(e => e.Id == id);
         }

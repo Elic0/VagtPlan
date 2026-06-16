@@ -6,7 +6,7 @@ namespace VagtPlan.Web.Services;
 
 public class WorkTimeApiClient(HttpClient httpClient, ApiAuthState authState)
 {
-    public async Task<WorkTimeModel[]> GetByDepartmentAsync(long departmentId, CancellationToken cancellationToken = default)
+    public async Task<WorkTimeModel[]> GetByDepartmentAsync(int departmentId, CancellationToken cancellationToken = default)
     {
         EnsureAuthorizedRequest();
         var workTimes = await httpClient.GetFromJsonAsync<WorkTimeModel[]>(
@@ -24,7 +24,7 @@ public class WorkTimeApiClient(HttpClient httpClient, ApiAuthState authState)
         return await response.Content.ReadFromJsonAsync<WorkTimeModel>(cancellationToken);
     }
 
-    public async Task<WorkTimeModel?> UpdateAsync(long id, WorkTimeDto dto, CancellationToken cancellationToken = default)
+    public async Task<WorkTimeModel?> UpdateAsync(int id, WorkTimeDto dto, CancellationToken cancellationToken = default)
     {
         EnsureAuthorizedRequest();
         var response = await httpClient.PutAsJsonAsync($"api/WorkTime/edit/{id}", dto, cancellationToken);
@@ -45,7 +45,7 @@ public class WorkTimeApiClient(HttpClient httpClient, ApiAuthState authState)
             : message.Trim('"'));
     }
 
-    public async Task DeleteAsync(long id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         EnsureAuthorizedRequest();
         var response = await httpClient.DeleteAsync($"api/WorkTime/delete/{id}", cancellationToken);
