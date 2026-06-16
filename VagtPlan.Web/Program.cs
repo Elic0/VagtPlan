@@ -49,6 +49,12 @@ builder.Services.AddHttpClient<UserService>(client =>
     client.BaseAddress = new(baseUrl);
 });
 
+builder.Services.AddHttpClient<WorkDayService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
