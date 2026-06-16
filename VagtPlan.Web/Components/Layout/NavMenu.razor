@@ -1,39 +1,55 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">VagtPlan</a>
+﻿@rendermode InteractiveServer
+
+<header class="vp-header">
+    <div class="vp-header-surface" aria-hidden="true"></div>
+
+    <div class="vp-header-container">
+        <div class="vp-header-row">
+            <a href="/" class="vp-brand" @onclick="CloseMenu">
+                <span class="vp-brand-icon" aria-hidden="true">
+                    <i class="bi bi-telephone-fill"></i>
+                </span>
+                <span class="vp-brand-text">
+                    <span class="vp-brand-title">NSC-TelefonVagt</span>
+                    <span class="vp-brand-sub">Vagtplanlægning</span>
+                </span>
+            </a>
+
+            <button type="button"
+                    class="vp-menu-btn @(_menuOpen ? "is-open" : "")"
+                    @onclick="ToggleMenu"
+                    aria-label="@(_menuOpen ? "Luk menu" : "Åbn menu")"
+                    aria-expanded="@_menuOpen"
+                    aria-controls="vp-main-nav">
+                <span class="vp-menu-btn-bar"></span>
+                <span class="vp-menu-btn-bar"></span>
+                <span class="vp-menu-btn-bar"></span>
+            </button>
+
+            <div id="vp-main-nav" class="vp-nav-drawer @(_menuOpen ? "is-open" : "")">
+                <nav class="vp-nav" aria-label="Hovednavigation">
+                    <NavLink href="" Match="NavLinkMatch.All" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
+                        <i class="bi bi-house-door" aria-hidden="true"></i>
+                        <span>Forside</span>
+                    </NavLink>
+                    <NavLink href="departments" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Afdelinger</span>
+                    </NavLink>
+                </nav>
+            </div>
+        </div>
     </div>
-</div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    @if (_menuOpen)
+    {
+        <button type="button" class="vp-nav-backdrop" @onclick="CloseMenu" aria-label="Luk menu"></button>
+    }
+</header>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="statuses">
-                <span class="bi bi-list-nested" aria-hidden="true"></span> statuses
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="specialwishes">
-                <span class="bi bi-list-nested" aria-hidden="true"></span> specialwishes
-            </NavLink>
-        </div>
-    </nav>
-</div>
+@code {
+    private bool _menuOpen;
+    
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+    private void CloseMenu() => _menuOpen = false;
+}

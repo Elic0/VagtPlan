@@ -1,0 +1,327 @@
+@page "/departments/{DepartmentId:int}/edit"
+@rendermode InteractiveServer
+@using VagtPlan.Web.Helpers
+@inject DepartmentApiClient DepartmentApi
+@inject WorkTimeApiClient WorkTimeApi
+@inject NavigationManager Navigation
+
+<PageTitle>@(_department?.Name ?? "Afdeling") — Arbejdstider</PageTitle>
+
+<div class="edit-page">
+    <nav class="breadcrumb">
+        <a href="/departments">Afdelinger</a>
+        <span class="sep">/</span>
+        <span>@(_department?.Name ?? "…")</span>
+    </nav>
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Henter data…</span>
+        </div>
+    }
+    else if (_department is null)
+    {
+        <div class="alert-banner">Afdelingen blev ikke fundet.</div>
+        <a href="/departments" class="back-link">← Tilbage til afdelinger</a>
+    }
+    else
+    {
+        <header class="page-header">
+            <div>
+                <p class="page-eyebrow">Arbejdstider</p>
+                <h1>@_department.Name</h1>
+                <p class="page-subtitle">Tilføj og administrer ugentlige arbejdstider for denne afdeling.</p>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert-banner" role="alert">@_error</div>
+        }
+
+        <section class="card-panel">
+            <h2>@(_editingWorkTimeId.HasValue ? "Rediger arbejdstid" : "Tilføj arbejdstid")</h2>
+
+            <EditForm Model="_workTimeForm" OnValidSubmit="SaveWorkTimeAsync" class="worktime-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid @(_editingWorkTimeId.HasValue ? "form-grid-edit" : "")">
+                    @if (_editingWorkTimeId.HasValue)
+                    {
+                        <div class="field-group">
+                            <label>Ugedag</label>
+                            <div class="field-readonly">
+                                <i class="bi bi-calendar3"></i>
+                                <span>@_workTimeForm.DayOfWeek</span>
+                            </div>
+                            <span class="field-readonly-hint">Ugedag kan ikke ændres — kun tidspunkter.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="field-group">
+                            <label for="weekday">Ugedag</label>
+                            <div class="field-select-wrapper">
+                                <InputSelect id="weekday" @bind-Value="_workTimeForm.DayOfWeek" class="field-input field-select">
+                                    @foreach (var day in _weekdays)
+                                    {
+                                        <option value="@day">@day</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="field-group">
+                        <label>Starttid</label>
+                        <TimeInput24 @bind-Value="_workTimeForm.StartTime" />
+                    </div>
+
+                    <div class="field-group">
+                        <label>Sluttid</label>
+                        <TimeInput24 @bind-Value="_workTimeForm.EndTime" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    @if (_editingWorkTimeId.HasValue)
+                    {
+                        <button type="button" class="btn-secondary" @onclick="CancelEdit">Annuller</button>
+                    }
+                    <button type="submit" class="btn-primary-action" disabled="@_isSaving">
+                        @(_isSaving ? "Gemmer…" : _editingWorkTimeId.HasValue ? "Gem ændringer" : "Tilføj arbejdstid")
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+
+        <section class="card-panel">
+            <div class="panel-heading">
+                <h2>Planlagte tider</h2>
+                <span class="count-badge">@_workTimes.Length</span>
+            </div>
+
+            @if (_workTimes.Length == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-clock"></i></div>
+                    <p>Ingen arbejdstider endnu</p>
+                    <span>Tilføj den første arbejdstid ovenfor.</span>
+                </div>
+            }
+            else
+            {
+                <div class="worktime-list">
+                    @foreach (var workTime in _workTimes)
+                    {
+                        <article class="worktime-row @( _editingWorkTimeId == workTime.Id ? "editing" : "" )">
+                            <div class="worktime-day">@workTime.DayOfWeek</div>
+                            <div class="worktime-hours">
+                                <span class="time-label">@workTime.StartTime.ToString("HH:mm")</span>
+                                <span class="time-sep">→</span>
+                                <span class="time-label">@workTime.EndTime.ToString("HH:mm")</span>
+                            </div>
+                            <div class="worktime-actions">
+                                <button class="btn-icon" title="Rediger" @onclick="() => StartEdit(workTime)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn-icon danger" title="Slet" @onclick="() => RequestDeleteWorkTime(workTime)" disabled="@_isSaving">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet arbejdstid?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet arbejdstid"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteWorkTimeAsync"
+    OnCancel="CancelDelete" />
+
+@code {
+    [Parameter]
+    public int DepartmentId { get; set; }
+
+    private static readonly string[] _weekdays =
+    [
+        "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"
+    ];
+
+    private DepartmentModel? _department;
+    private WorkTimeModel[] _workTimes = [];
+    private WorkTimeDto _workTimeForm = new()
+    {
+        DayOfWeek = "Mandag",
+        StartTime = new TimeOnly(8, 0),
+        EndTime = new TimeOnly(16, 0)
+    };
+    private int? _editingWorkTimeId;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _error;
+    private bool _showDeleteConfirm;
+    private int? _pendingDeleteId;
+    private string _deleteConfirmMessage = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            _department = await DepartmentApi.GetByIdAsync(DepartmentId);
+            if (_department is not null)
+            {
+                _workTimes = await WorkTimeApi.GetByDepartmentAsync(DepartmentId);
+                _workTimeForm.DepartmentId = DepartmentId;
+            }
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke hente data. Tjek at API'et kører.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveWorkTimeAsync()
+    {
+        if (_workTimeForm.EndTime <= _workTimeForm.StartTime)
+        {
+            _error = "Sluttid skal være efter starttid.";
+            return;
+        }
+
+        if (WorkTimeOverlapHelper.HasOverlap(
+            _workTimes,
+            _workTimeForm.DayOfWeek,
+            _workTimeForm.StartTime,
+            _workTimeForm.EndTime,
+            _editingWorkTimeId))
+        {
+            _error = "Arbejdstiden overlapper med en eksisterende tid på samme ugedag.";
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            if (_editingWorkTimeId.HasValue)
+            {
+                await WorkTimeApi.UpdateAsync(_editingWorkTimeId.Value, _workTimeForm);
+            }
+            else
+            {
+                await WorkTimeApi.CreateAsync(_workTimeForm);
+            }
+
+            ResetForm();
+            _workTimes = await WorkTimeApi.GetByDepartmentAsync(DepartmentId);
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke gemme arbejdstid.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void StartEdit(WorkTimeModel workTime)
+    {
+        _editingWorkTimeId = workTime.Id;
+        _workTimeForm = new WorkTimeDto
+        {
+            DepartmentId = workTime.DepartmentId,
+            DayOfWeek = workTime.DayOfWeek,
+            StartTime = workTime.StartTime,
+            EndTime = workTime.EndTime
+        };
+        _error = null;
+    }
+
+    private void CancelEdit() => ResetForm();
+
+    private void ResetForm()
+    {
+        _editingWorkTimeId = null;
+        _workTimeForm = new WorkTimeDto
+        {
+            DepartmentId = DepartmentId,
+            DayOfWeek = "Mandag",
+            StartTime = new TimeOnly(8, 0),
+            EndTime = new TimeOnly(16, 0)
+        };
+    }
+
+    private void RequestDeleteWorkTime(WorkTimeModel workTime)
+    {
+        _pendingDeleteId = workTime.Id;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette arbejdstiden {workTime.DayOfWeek} {workTime.StartTime:HH\\:mm}–{workTime.EndTime:HH\\:mm}? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteId = null;
+    }
+
+    private async Task ConfirmDeleteWorkTimeAsync()
+    {
+        if (!_pendingDeleteId.HasValue)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await WorkTimeApi.DeleteAsync(_pendingDeleteId.Value);
+            if (_editingWorkTimeId == _pendingDeleteId)
+            {
+                ResetForm();
+            }
+
+            _workTimes = await WorkTimeApi.GetByDepartmentAsync(DepartmentId);
+            _showDeleteConfirm = false;
+            _pendingDeleteId = null;
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke slette arbejdstid.";
+            _showDeleteConfirm = false;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}
