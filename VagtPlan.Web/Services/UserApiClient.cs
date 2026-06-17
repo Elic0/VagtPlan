@@ -32,16 +32,28 @@ namespace VagtPlan.Web.Services
         {
             EnsureAuthorizedRequest();
             var response = await _httpClient.PostAsJsonAsync("api/User/createUser", dto, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessOrThrowAsync(response, cancellationToken);
             return await response.Content.ReadFromJsonAsync<UserModel>(cancellationToken);
         }
 
-        public async Task<UserModel?> UpdateAsync(int id, UserDto dto, CancellationToken cancellationToken = default)
+        public async Task UpdateAsync(int id, UserDto dto, CancellationToken cancellationToken = default)
         {
             EnsureAuthorizedRequest();
             var response = await _httpClient.PutAsJsonAsync($"api/User/edit/{id}", dto, cancellationToken);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<UserModel>(cancellationToken);
+            await EnsureSuccessOrThrowAsync(response, cancellationToken);
+        }
+
+        private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var message = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException(string.IsNullOrWhiteSpace(message)
+                ? "Kunne ikke gemme bruger."
+                : message.Trim('"'));
         }
 
         public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)

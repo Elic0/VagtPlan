@@ -27,6 +27,7 @@
 
 html, body {
     margin: 0;
+    overflow-x: hidden;
     font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
     font-size: 16px;
     color: var(--vp-text);
@@ -38,7 +39,6 @@ a {
     color: var(--vp-primary);
 }
 
-/* Alerts (unified system) */
 .vp-alert {
     display: flex;
     align-items: flex-start;
@@ -123,7 +123,6 @@ a {
     border-color: rgba(37, 99, 235, 0.18);
 }
 
-/* Backwards compatibility (map old banners to alert system) */
 .alert-banner,
 .login-error {
     margin-bottom: 1.25rem;
@@ -137,7 +136,6 @@ a {
     line-height: 1.5;
 }
 
-/* Buttons (unified system) */
 .vp-btn {
     display: inline-flex;
     align-items: center;
@@ -220,10 +218,8 @@ a {
     font-size: 1rem;
 }
 
-/* Alias older button classes to unified system */
 .btn-primary-action,
 .login-btn {
-    /* keep existing markup working; align with primary button */
     border: none;
     border-radius: 11px;
     padding: 0.8rem 1rem;
@@ -273,7 +269,6 @@ a {
     }
 }
 
-/* Home page (moved from inline styles) */
 .home-page {
     padding: 1rem 0 2rem;
 }
@@ -374,8 +369,34 @@ a {
         grid-template-columns: 1fr;
     }
 
+    .home-hero {
+        padding: 1.25rem 0 2rem;
+    }
+
     .home-hero h1 {
-        font-size: 2rem;
+        font-size: 1.85rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .hero-text {
+        font-size: 0.975rem;
+    }
+
+    .hero-cta {
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-hero h1 {
+        font-size: 1.55rem;
+    }
+
+    .hero-text {
+        font-size: 0.9rem;
     }
 }
 
@@ -383,7 +404,6 @@ h1:focus {
     outline: none;
 }
 
-/* Shared page layout (departments design system) */
 .departments-page {
     padding: 0;
 }
@@ -449,6 +469,17 @@ h1:focus {
     gap: 1rem;
     align-items: flex-end;
     flex-wrap: wrap;
+}
+
+.create-form .field-group {
+    flex: 1 1 220px;
+    min-width: 220px;
+    max-width: 420px;
+}
+
+.create-panel .create-action-toggle {
+    display: inline-flex;
+    margin: -0.35rem 0 1.25rem;
 }
 
 .panel-heading {
@@ -621,7 +652,6 @@ h1:focus {
     }
 }
 
-/* Schedule page — wider layout + compact calendar */
 @media (min-width: 1100px) {
     .app-content:has(.page-wide) {
         max-width: min(1680px, calc(100vw - 3rem));
@@ -802,7 +832,6 @@ h1:focus {
     cursor: not-allowed;
 }
 
-/* 24-hour time input */
 .time-input-24 {
     display: flex;
     align-items: center;
@@ -1087,67 +1116,6 @@ h1:focus {
     font-size: 0.9rem;
 }
 
-.vp-nav-logout {
-    width: 100%;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    text-align: left;
-    background: rgba(220, 38, 38, 0.08);
-    color: #b42318;
-    border: 1px solid rgba(220, 38, 38, 0.18);
-    border-radius: 10px;
-    padding: 0.55rem 0.8rem;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, color 0.15s ease;
-}
-
-.vp-nav-logout:hover {
-    background: rgba(220, 38, 38, 0.14);
-    border-color: rgba(220, 38, 38, 0.28);
-    color: #991b1b;
-}
-
-.vp-nav-logout:active {
-    transform: translateY(1px);
-}
-
-.vp-nav-logout:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22);
-}
-
-.vp-nav-logout-icon {
-    width: 1.35rem;
-    height: 1.35rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 999px;
-    flex-shrink: 0;
-}
-
-@media (min-width: 769px) {
-    .vp-nav-logout {
-        background: rgba(255, 255, 255, 0.12);
-        border-color: rgba(255, 255, 255, 0.22);
-        color: #ffe2e2;
-    }
-
-    .vp-nav-logout:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.35);
-        color: #fff1f1;
-    }
-
-    .vp-nav-logout-icon {
-        background: rgba(255, 255, 255, 0.22);
-    }
-}
-
 .vp-scroll-panel {
     max-height: 320px;
     overflow: auto;
@@ -1306,7 +1274,6 @@ h1:focus {
     }
 }
 
-/* Auth bootstrap loading */
 .loading-state {
     display: flex;
     align-items: center;
@@ -1329,12 +1296,10 @@ h1:focus {
     to { transform: rotate(360deg); }
 }
 
-/* Split layout (users + form columns) */
 .vp-split-layout {
     align-items: flex-start;
 }
 
-/* Weekday checkbox grid — wraps on small screens */
 .vp-weekday-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

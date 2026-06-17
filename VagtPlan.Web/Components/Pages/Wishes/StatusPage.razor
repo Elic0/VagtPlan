@@ -22,10 +22,10 @@
     }
 
     <section class="card-panel create-panel">
-        <div class="panel-heading">
-            <h2>Opret status</h2>
-            <button class="vp-btn-edit" @onclick="() => showCreate = !showCreate">@((showCreate) ? "Annuller" : "Ny status")</button>
-        </div>
+        <h2>Opret status</h2>
+        <button type="button" class="vp-btn-edit create-action-toggle" @onclick="() => showCreate = !showCreate">
+            @((showCreate) ? "Annuller" : "Ny status")
+        </button>
 
         @if (showCreate)
         {
@@ -43,7 +43,7 @@
                 </div>
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="availableCreate" @bind="newStatus.IsAvailable" />
-                    <label class="form-check-label" for="availableCreate">Kan tildeles</label>
+                    <label class="form-check-label" for="availableCreate">Tilgængelig</label>
                 </div>
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="defaultCreate" @bind="newStatus.Default" />
@@ -71,7 +71,7 @@
             </div>
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="availableEdit" @bind="editModel.IsAvailable" />
-                <label class="form-check-label" for="availableEdit">Kan tildeles</label>
+                <label class="form-check-label" for="availableEdit">Tilgængelig</label>
             </div>
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="defaultEdit" @bind="editModel.Default" />
@@ -116,7 +116,7 @@
                                 <h3>@s.Name</h3>
                                 <div class="vp-record-meta">
                                     <span class="vp-color-chip" style="--chip-color:@s.Colour">@s.Colour</span>
-                                    <span class="vp-pill">Kan tildeles: @(s.IsAvailable ? "Ja" : "Nej")</span>
+                                    <span class="vp-pill">Tilgængelig: @(s.IsAvailable ? "Ja" : "Nej")</span>
                                     <span class="vp-pill">Standard: @(s.Default ? "Ja" : "Nej")</span>
                                 </div>
                             </div>

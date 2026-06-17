@@ -11,7 +11,7 @@
 
 <div class="edit-page">
     <nav class="breadcrumb">
-        <a href="/users">Bruger Håndtering</a>
+        <a href="/users">Brugerhåndtering</a>
         <span class="sep">/</span>
         <span>@(_user?.Name ?? "...")</span>
     </nav>
@@ -25,8 +25,8 @@
     }
     else if (_user is null)
     {
-        <div class="alert-banner">Brugeren blev ikke funder</div>
-        <a href="/users" class="back-link">Tilbage til bruger håndtering</a>
+        <div class="alert-banner">Brugeren blev ikke fundet</div>
+        <a href="/users" class="back-link">Tilbage til brugerhåndtering</a>
     }
     else
     {
@@ -49,7 +49,7 @@
             <EditForm Model="_form" OnValidSubmit="SaveUserAsync" class="create-form">
                 <DataAnnotationsValidator />
 
-                <div class="form-row">
+                <div class="edit-form-fields">
                     <div class="field-group">
                         <label for="user-name">Navn</label>
                         <InputText id="user-name" @bind-Value="_form.Name" class="field-input" />
@@ -74,15 +74,21 @@
                             }
                         </InputSelect>
                     </div>
-                    <div class="field-group">
-                        <label for="user-vacation">Vaction Dage</label>
+                    <div class="field-group field-group-narrow">
+                        <label for="user-vacation">Feriedage</label>
                         <InputNumber id="user-vacation" @bind-Value="_form.VactionDays" class="field-input" />
                     </div>
                 </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary-action" disabled="@_isSaving">@(_isSaving ? "Gemmer…" : "Gem")</button>
-                    <button type="button" class="btn-secondary" @onclick="Cancel" disabled="@_isSaving">Annuller</button>
-                    <button type="button" class="btn-delete" @onclick="DeleteAsync" disabled="@_isSaving">Slet</button>
+
+                <div class="form-actions edit-form-actions">
+                    <div class="form-actions-primary">
+                        <button type="button" class="btn-secondary" @onclick="Cancel" disabled="@_isSaving">Annuller</button>
+                        <button type="submit" class="btn-primary-action" disabled="@_isSaving">@(_isSaving ? "Gemmer…" : "Gem")</button>
+                    </div>
+                    <button type="button" class="btn-delete" @onclick="DeleteAsync" disabled="@_isSaving">
+                        <i class="bi bi-trash3"></i>
+                        Slet bruger
+                    </button>
                 </div>
             </EditForm>
         </section>
@@ -161,9 +167,9 @@
 
     private async Task SaveUserAsync()
     {
-        if (string.IsNullOrWhiteSpace(_form.Name))
+        _error = ValidateUserInput(_form);
+        if (_error != null)
         {
-            _error = "Navn må ikke være tomt.";
             return;
         }
 
@@ -179,13 +185,38 @@
         {
             if (!HandleUnauthorized(ex))
             {
-                _error = "Kunne ikke gemme bruger.";
+                _error = ex.Message;
             }
         }
         finally
         {
             _isSaving = false;
         }
+    }
+
+    private static string? ValidateUserInput(UserDto user)
+    {
+        if (string.IsNullOrWhiteSpace(user.Name))
+        {
+            return "Navn må ikke være tomt.";
+        }
+
+        if (user.DepartmentId <= 0)
+        {
+            return "Vælg en afdeling.";
+        }
+
+        if (user.UserRoleId <= 0)
+        {
+            return "Vælg en rolle.";
+        }
+
+        if (user.VactionDays < 0)
+        {
+            return "Feriedage kan ikke være negative.";
+        }
+
+        return null;
     }
 
     private async Task DeleteAsync()

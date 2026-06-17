@@ -13,11 +13,6 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddOutputCache();
 
-builder.Services.AddHttpClient<WeatherApiClient>(client =>
-    {
-        client.BaseAddress = new("https+http://apiservice");
-    });
-
 builder.Services.AddHttpClient<VagtPlan.Web.Services.UserRoleApiClient>(client =>
     {
         client.BaseAddress = new("https+http://apiservice/");

@@ -8,11 +8,13 @@
 @using VagtPlan.Web.Models
 @using System.Linq
 
+<PageTitle>Brugere — VagtPlan</PageTitle>
+
 <div class="users-page">
     <header class="page-header">
         <div>
             <p class="page-eyebrow">Vagtplan</p>
-            <h1>Bruger håndtering</h1>
+            <h1>Brugerhåndtering</h1>
             <p class="page-subtitle">Opret brugere og administrer eksisterende brugere.</p>
         </div>
     </header>
@@ -53,8 +55,8 @@
                     </InputSelect>
                 </div>
                 <div class="field-group">
-                    <label for="user-vacation">Vaction Dage</label>
-                    <InputNumber id="user-vacation" @bind-Value="_newUser.VactionDays" class="field-input" placeholder="Vaction Dage" />
+                    <label for="user-vacation">Feriedage</label>
+                    <InputNumber id="user-vacation" @bind-Value="_newUser.VactionDays" class="field-input" placeholder="Antal feriedage" />
                 </div>
                 <button type="submit" class="btn-primary-action" disabled="@_isSaving">
                     @(_isSaving ? "Opretter…" : "Opret bruger")
@@ -68,23 +70,21 @@
             <h2>Alle brugere</h2>
             <span class="count-badge">@_users.Length</span>
         </div>
-    </section>
 
-    <section class="user-list">
         @if (_isLoading)
         {
             <div class="loading-state">
                 <div class="spinner"></div>
-                <span>Henter brugere...</span>
+                <span>Henter brugere…</span>
             </div>
         }
         else if (_users.Length == 0)
         {
             <div class="empty-state">
-                <div class="empty-icon">◎</div>
-                <p>Ingen brugere</p>
+                <div class="empty-icon"><i class="bi bi-people"></i></div>
+                <p>Ingen brugere endnu</p>
+                <span>Opret din første bruger ovenfor.</span>
             </div>
-
         }
         else
         {
@@ -96,17 +96,22 @@
                             <h3>@user.Name</h3>
                             <p>Afdeling: @GetDepartmentName(user.DepartmentId)</p>
                             <p>Rolle: @GetUserRoleName(user.UserRoleId)</p>
-                            <p>Vaction dage: @user.VactionDays</p>
+                            <p>Feriedage: @user.VactionDays</p>
                         </div>
                         <div class="user-card-actions">
-                            <button class="btn-edit" @onclick="() => NavigateToEdit(user.Id)">Rediger bruger</button>
-                            <button class="btn-delete" @onclick="() => DeleteUserAsync(user.Id)">Slet</button>
+                            <button class="btn-edit" @onclick="() => NavigateToEdit(user.Id)">
+                                <i class="bi bi-pencil"></i>
+                                Rediger
+                            </button>
+                            <button class="btn-delete" @onclick="() => DeleteUserAsync(user.Id)">
+                                <i class="bi bi-trash3"></i>
+                                Slet
+                            </button>
                         </div>
                     </article>
                 }
             </div>
         }
-
     </section>
 
 </div>
@@ -216,9 +221,17 @@
 
     private async Task CreateUserAsync()
     {
+        _error = ValidateUserInput(_newUser);
+        if (_error != null)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
         try
         {
-            _isSaving = true;
             var createdUser = await UserApi.CreateAsync(_newUser);
             if (createdUser != null)
             {
@@ -229,13 +242,38 @@
         {
             if (!HandleUnauthorized(ex))
             {
-                _error = $"Fejl ved oprettelse af bruger: {ex.Message}";
+                _error = ex.Message;
             }
         }
         finally
         {
             _isSaving = false;
         }
+    }
+
+    private static string? ValidateUserInput(UserDto user)
+    {
+        if (string.IsNullOrWhiteSpace(user.Name))
+        {
+            return "Navn må ikke være tomt.";
+        }
+
+        if (user.DepartmentId <= 0)
+        {
+            return "Vælg en afdeling.";
+        }
+
+        if (user.UserRoleId <= 0)
+        {
+            return "Vælg en rolle.";
+        }
+
+        if (user.VactionDays < 0)
+        {
+            return "Feriedage kan ikke være negative.";
+        }
+
+        return null;
     }
 
     private void NavigateToEdit(int userId)
