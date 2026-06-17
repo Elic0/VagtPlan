@@ -44,6 +44,8 @@ public class WorkdaysController : ControllerBase
         if (request.EndDate < request.StartDate)
             return BadRequest("EndDate must be later than StartDate");
 
+        var selectedUserIds = request.SelectedUserIds ?? new List<int>();
+
         // find system default status
         var defaultStatus = await _context.Statuses.FirstOrDefaultAsync(s => s.Default);
         if (defaultStatus == null)
@@ -54,9 +56,9 @@ public class WorkdaysController : ControllerBase
 
         // determine department id: use request.DepartmentId, or fallback to department of first selected user
         var departmentId = request.DepartmentId;
-        if (departmentId == 0 && request.SelectedUserIds != null && request.SelectedUserIds.Any())
+        if (departmentId == 0 && selectedUserIds.Any())
         {
-            var firstUser = await _context.Users.FindAsync(request.SelectedUserIds.First());
+            var firstUser = await _context.Users.FindAsync(selectedUserIds.First());
             if (firstUser != null)
             {
                 departmentId = firstUser.DepartmentId;
@@ -71,7 +73,7 @@ public class WorkdaysController : ControllerBase
 
         // load wishes for selected users that match default status and overlap the period (or are open-ended)
         var wishes = await _context.SpecialWishes
-            .Where(w => w.StatusId == defaultStatus.Id && request.SelectedUserIds.Contains(w.UserId))
+            .Where(w => w.StatusId == defaultStatus.Id && selectedUserIds.Contains(w.UserId))
             .ToListAsync();
 
         // filter wishes by date overlap and group by dayOfWeek
@@ -85,7 +87,7 @@ public class WorkdaysController : ControllerBase
 
         // load non-default special wishes for selected users (we'll honor those where the status is not available)
         var nonDefaultWishes = await _context.SpecialWishes
-            .Where(w => w.StatusId != defaultStatus.Id && request.SelectedUserIds.Contains(w.UserId))
+            .Where(w => w.StatusId != defaultStatus.Id && selectedUserIds.Contains(w.UserId))
             .ToListAsync();
 
         // filter to wishes whose status is not available and that overlap the period
@@ -110,10 +112,10 @@ public class WorkdaysController : ControllerBase
             .ToListAsync();
 
         // assigned counts start from existing counts but only for selected users
-        var assignedCounts = request.SelectedUserIds.ToDictionary(id => id, id => existing.Count(e => e.UserId == id));
+        var assignedCounts = selectedUserIds.ToDictionary(id => id, id => existing.Count(e => e.UserId == id));
 
         // rotation data for Fridays
-        var rotationOrder = request.SelectedUserIds.OrderBy(x => x).ToList();
+        var rotationOrder = selectedUserIds.OrderBy(x => x).ToList();
         var rotationIndex = 0;
 
         var createdEntities = new List<Workday>();
@@ -132,7 +134,7 @@ public class WorkdaysController : ControllerBase
                     var wishStartOk = wish.StartDate == null || wish.StartDate <= d.ToDateTime(TimeOnly.MaxValue);
                     var wishEndOk = wish.EndDate == null || wish.EndDate >= d.ToDateTime(TimeOnly.MinValue);
                     if (!wishStartOk || !wishEndOk) continue;
-                    if (!request.SelectedUserIds.Contains(wish.UserId)) continue;
+                    if (!selectedUserIds.Contains(wish.UserId)) continue;
                     unavailableUsersForDate.Add(wish.UserId);
                 }
             }
@@ -201,7 +203,7 @@ public class WorkdaysController : ControllerBase
             }
 
             // candidates who are both eligible by wish and selected, and not unavailable for this date
-            var candidates = candidateUserIds.Where(id => request.SelectedUserIds.Contains(id) && !unavailableUsersForDate.Contains(id)).ToList();
+            var candidates = candidateUserIds.Where(id => selectedUserIds.Contains(id) && !unavailableUsersForDate.Contains(id)).ToList();
             if (!candidates.Any()) continue;
 
             // exclude any candidate that would cause them to exceed (min + 2) after assignment

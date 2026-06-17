@@ -4,6 +4,7 @@
 @inject DepartmentApiClient DepartmentApi
 @inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 @using VagtPlan.Web.Models
 @using System.Linq
 
@@ -33,7 +34,7 @@
                 </div>
                 <div class="field-group">
                     <label for="user-department">Afdeling</label>
-                    <InputSelect id="user-department" TValue="long" @bind-Value="_newUser.DepartmentId" class="field-input">
+                    <InputSelect id="user-department" TValue="int" @bind-Value="_newUser.DepartmentId" class="field-input">
                         <option value="0" disabled>Vælg afdeling</option>
                         @foreach (var d in _departments)
                         {
@@ -43,7 +44,7 @@
                 </div>
                 <div class="field-group">
                     <label for="user-role">Rolle</label>
-                    <InputSelect id="user-role" TValue="long" @bind-Value="_newUser.UserRoleId" class="field-input">
+                    <InputSelect id="user-role" TValue="int" @bind-Value="_newUser.UserRoleId" class="field-input">
                         <option value="0" disabled>Vælg rolle</option>
                         @foreach (var r in _userRoles)
                         {
@@ -110,6 +111,15 @@
 
 </div>
 
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet bruger?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet bruger"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteUserAsync"
+    OnCancel="CancelDeleteUser" />
+
 @code {
     private UserModel[] _users = Array.Empty<UserModel>();
     private DepartmentModel[] _departments = Array.Empty<DepartmentModel>();
@@ -124,6 +134,9 @@
     private bool _isLoading = true;
     private bool _isSaving = false;
     private string? _error;
+    private bool _showDeleteConfirm;
+    private int? _pendingDeleteUserId;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,7 +154,10 @@
         }
         catch (Exception ex)
         {
-            _error = $"Fejl ved indlæsning af brugere: {ex.Message}";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = $"Fejl ved indlæsning af brugere: {ex.Message}";
+            }
         }
         finally
         {
@@ -155,10 +171,13 @@
         {
             _departments = await DepartmentApi.GetAllAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // non-fatal: keep departments empty and show generic error
-            _error ??= "Kunne ikke hente afdelinger.";
+            if (!HandleUnauthorized(ex))
+            {
+                // non-fatal: keep departments empty and show generic error
+                _error ??= "Kunne ikke hente afdelinger.";
+            }
         }
     }
 
@@ -168,20 +187,23 @@
         {
             _userRoles = await UserRoleApi.GetAllAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error ??= "Kunne ikke hente roller.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error ??= "Kunne ikke hente roller.";
+            }
         }
     }
 
-    private string GetDepartmentName(long id)
+    private string GetDepartmentName(int id)
     {
         if (id == 0) return "-";
         var d = _departments.FirstOrDefault(x => x.Id == id);
         return d?.Name ?? id.ToString();
     }
 
-    private string GetUserRoleName(long id)
+    private string GetUserRoleName(int id)
     {
         if (id == 0) return "-";
         var r = _userRoles.FirstOrDefault(x => x.Id == id);
@@ -201,7 +223,10 @@
         }
         catch (Exception ex)
         {
-            _error = $"Fejl ved oprettelse af bruger: {ex.Message}";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = $"Fejl ved oprettelse af bruger: {ex.Message}";
+            }
         }
         finally
         {
@@ -214,23 +239,66 @@
         Navigation.NavigateTo($"/users/{userId}");
     }
 
-    private async Task DeleteUserAsync(int userId)
+    private void DeleteUserAsync(int userId)
     {
+        var name = _users.FirstOrDefault(u => u.Id == userId)?.Name ?? "brugeren";
+        _pendingDeleteUserId = userId;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette {name}? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDeleteUser()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteUserId = null;
+    }
+
+    private async Task ConfirmDeleteUserAsync()
+    {
+        if (!_pendingDeleteUserId.HasValue) return;
+
         _isSaving = true;
         _error = null;
 
         try
         {
-            await UserApi.DeleteAsync(userId);
+            await UserApi.DeleteAsync(_pendingDeleteUserId.Value);
             await LoadUsersAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke slette bruger.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke slette bruger.";
+            }
         }
         finally
         {
             _isSaving = false;
+            _showDeleteConfirm = false;
+            _pendingDeleteUserId = null;
         }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
     }
 }

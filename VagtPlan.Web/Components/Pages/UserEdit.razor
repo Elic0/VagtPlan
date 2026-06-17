@@ -3,6 +3,7 @@
 @inject DepartmentApiClient DepartmentApi
 @inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 @using VagtPlan.Web.Models
 @rendermode InteractiveServer
 
@@ -55,7 +56,7 @@
                     </div>
                     <div class="field-group">
                         <label for="user-department">Afdeling</label>
-                        <InputSelect id="user-department" TValue="long" @bind-Value="_form.DepartmentId" class="field-input">
+                        <InputSelect id="user-department" TValue="int" @bind-Value="_form.DepartmentId" class="field-input">
                             <option value="0" disabled>Vælg afdeling</option>
                             @foreach (var d in _departments)
                             {
@@ -65,7 +66,7 @@
                     </div>
                     <div class="field-group">
                         <label for="user-role">Rolle</label>
-                        <InputSelect id="user-role" TValue="long" @bind-Value="_form.UserRoleId" class="field-input">
+                        <InputSelect id="user-role" TValue="int" @bind-Value="_form.UserRoleId" class="field-input">
                             <option value="0" disabled>Vælg rolle</option>
                             @foreach (var r in _userRoles)
                             {
@@ -88,6 +89,15 @@
     }
 </div>
 
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet bruger?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet bruger"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteAsync"
+    OnCancel="CancelDelete" />
+
 @code {
     [Parameter]
     public int UserId { get; set; }
@@ -107,6 +117,8 @@
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _error;
+    private bool _showDeleteConfirm;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -132,9 +144,12 @@
                 _form.password = _user.password;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke hente bruger. Tjek at Api'en kører";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke hente bruger. Tjek at Api'en kører";
+            }
         }
         finally
         {
@@ -160,9 +175,12 @@
             await UserApi.UpdateAsync(UserId, _form);
             Navigation.NavigateTo("/users");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke gemme bruger.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke gemme bruger.";
+            }
         }
         finally
         {
@@ -172,8 +190,18 @@
 
     private async Task DeleteAsync()
     {
-        var confirmed = true;
-        if (!confirmed) return;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette {_user?.Name ?? "denne bruger"}? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        _showDeleteConfirm = false;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        _showDeleteConfirm = false;
 
         _isSaving = true;
         _error = null;
@@ -183,13 +211,38 @@
             await UserApi.DeleteAsync(UserId);
             Navigation.NavigateTo("/users");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke slette bruger.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke slette bruger.";
+            }
         }
         finally
         {
             _isSaving = false;
         }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
     }
 }

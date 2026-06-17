@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 
 <PageTitle>Rolle Håndtering</PageTitle>
 
@@ -71,13 +72,25 @@
                         <button class="btn-edit" @onclick="() => NavigateToEdit(userRole.Id)">
                             Rediger roller
                         </button>
-                        <button class="btn-delete" @onclick="() => DeleteUserRoleAsync(userRole.Id)"></button>
+                        <button class="btn-delete" @onclick="() => RequestDeleteUserRole(userRole)">
+                            <i class="bi bi-trash3"></i>
+                            Slet
+                        </button>
                     </div>
                 </article>
             }
         </div>
     }
 </div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet rolle?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet rolle"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteUserRoleAsync"
+    OnCancel="CancelDeleteUserRole" />
 
 
 @code {
@@ -86,6 +99,9 @@
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _error;
+    private UserRoleModel? _pendingDeleteRole;
+    private bool _showDeleteConfirm;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -101,9 +117,12 @@
         {
             _userRoles = await UserRoleApi.GetAllAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke hente roller. Tjek at Api'en kører";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke hente roller. Tjek at Api'en kører";
+            }
         }
         finally
         {
@@ -115,6 +134,7 @@
     {
         if (string.IsNullOrWhiteSpace(_newUserRole.Name))
         {
+            _error = "Navn må ikke være tomt.";
             return;
         }
 
@@ -127,9 +147,12 @@
             _newUserRole.Name = string.Empty;
             await LoadUserRolesAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke oprette rolle";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke oprette rolle";
+            }
         }
         finally
         {
@@ -137,25 +160,67 @@
         }
     }
 
-    private async Task DeleteUserRoleAsync(int id)
+    private void RequestDeleteUserRole(UserRoleModel role)
     {
+        _pendingDeleteRole = role;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette rollen '{role.Name}'? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDeleteUserRole()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteRole = null;
+    }
+
+    private async Task ConfirmDeleteUserRoleAsync()
+    {
+        if (_pendingDeleteRole == null) return;
+
         _isSaving = true;
         _error = null;
 
         try
         {
-            await UserRoleApi.DeleteAsync(id);
+            await UserRoleApi.DeleteAsync(_pendingDeleteRole.Id);
             await LoadUserRolesAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke slette rolle.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke slette rolle.";
+            }
         }
         finally
         {
             _isSaving = false;
+            _showDeleteConfirm = false;
+            _pendingDeleteRole = null;
         }
     }
 
     private void NavigateToEdit(int id) => Navigation.NavigateTo($"/role/{id}/edit");
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
+    }
 }

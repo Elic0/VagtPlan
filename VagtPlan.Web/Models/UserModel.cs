@@ -6,8 +6,8 @@
         public required string Name { get; set; }
         public string? password { get; set; }
         public required int VactionDays { get; set; }
-        public required long DepartmentId { get; set; }
-        public required long UserRoleId { get; set; }
+        public required int DepartmentId { get; set; }
+        public required int UserRoleId { get; set; }
     }
 
     public class UserDto
@@ -15,8 +15,8 @@
         public required string Name { get; set; }
         public string? password { get; set; }
         public required int VactionDays { get; set; }
-        public required long DepartmentId { get; set; }
-        public required long UserRoleId { get; set; }
+        public required int DepartmentId { get; set; }
+        public required int UserRoleId { get; set; }
     }
 
     public class LoginDto

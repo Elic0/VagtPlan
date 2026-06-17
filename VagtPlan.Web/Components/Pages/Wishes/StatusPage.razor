@@ -2,54 +2,68 @@
 @rendermode InteractiveServer
 @using VagtPlan.Web.Services
 @inject StatusService StatusService
-@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 
-<h3>Statuses</h3>
+<PageTitle>Statusser — VagtPlan</PageTitle>
 
-<div class="mb-3">
-    <button class="btn btn-primary" @onclick="() => showCreate = !showCreate">@((showCreate) ? "Cancel" : "New Status")</button>
-</div>
-
-@if (showCreate)
-{
-    <div class="card mb-3">
-        <div class="card-body">
-            <h5 class="card-title">Create Status</h5>
-            <div class="mb-2">
-                <label class="form-label">Name</label>
-                <input class="form-control" @bind="newStatus.Name" />
-            </div>
-            <div class="mb-2">
-                <label class="form-label">Colour</label>
-                <div class="input-group" style="max-width:360px;">
-                    <input type="color" class="form-control form-control-color" style="width:48px; padding:0;" @bind="newStatus.Colour" />
-                    <input class="form-control" @bind="newStatus.Colour" @bind:event="oninput" />
-                </div>
-            </div>
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="availableCreate" @bind="newStatus.IsAvailable" />
-                <label class="form-check-label" for="availableCreate">Is Available</label>
-            </div>
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="defaultCreate" @bind="newStatus.Default" />
-                <label class="form-check-label" for="defaultCreate">Default</label>
-            </div>
-            <button class="btn btn-success" @onclick="CreateStatusAsync">Create</button>
+<div class="departments-page">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Vagtplan</p>
+            <h1>Statusser</h1>
+            <p class="page-subtitle">Administrer statusser, farver og standardstatus.</p>
         </div>
-    </div>
-}
+    </header>
 
-@if (editingStatus != null)
-{
-    <div class="card mb-3">
-        <div class="card-body">
-            <h5 class="card-title">Edit Status (@editingStatus.Name)</h5>
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert-banner" role="alert">@errorMessage</div>
+    }
+
+    <section class="card-panel create-panel">
+        <div class="panel-heading">
+            <h2>Opret status</h2>
+            <button class="vp-btn-edit" @onclick="() => showCreate = !showCreate">@((showCreate) ? "Annuller" : "Ny status")</button>
+        </div>
+
+        @if (showCreate)
+        {
+            <div>
+                <div class="mb-2">
+                    <label class="form-label">Navn</label>
+                    <input class="form-control" @bind="newStatus.Name" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Farve</label>
+                    <div class="input-group" style="max-width:360px;">
+                        <input type="color" class="form-control form-control-color" style="width:48px; padding:0;" @bind="newStatus.Colour" />
+                        <input class="form-control" @bind="newStatus.Colour" @bind:event="oninput" />
+                    </div>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="availableCreate" @bind="newStatus.IsAvailable" />
+                    <label class="form-check-label" for="availableCreate">Kan tildeles</label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="defaultCreate" @bind="newStatus.Default" />
+                    <label class="form-check-label" for="defaultCreate">Standard</label>
+                </div>
+                <button class="btn-primary-action" @onclick="CreateStatusAsync">Opret</button>
+            </div>
+        }
+    </section>
+
+    @if (editingStatus != null)
+    {
+        <section class="card-panel create-panel">
+            <h2>Rediger status (@editingStatus.Name)</h2>
             <div class="mb-2">
-                <label class="form-label">Name</label>
+                <label class="form-label">Navn</label>
                 <input class="form-control" @bind="editModel.Name" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Colour</label>
+                <label class="form-label">Farve</label>
                 <div class="input-group" style="max-width:360px;">
                     <input type="color" class="form-control form-control-color" style="width:48px; padding:0;" @bind="editModel.Colour" />
                     <input class="form-control" @bind="editModel.Colour" @bind:event="oninput" />
@@ -57,73 +71,105 @@
             </div>
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="availableEdit" @bind="editModel.IsAvailable" />
-                <label class="form-check-label" for="availableEdit">Is Available</label>
+                <label class="form-check-label" for="availableEdit">Kan tildeles</label>
             </div>
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="defaultEdit" @bind="editModel.Default" />
-                <label class="form-check-label" for="defaultEdit">Default</label>
+                <label class="form-check-label" for="defaultEdit">Standard</label>
             </div>
-            <button class="btn btn-primary me-2" @onclick="UpdateStatusAsync">Save</button>
-            <button class="btn btn-secondary" @onclick="() => editingStatus = null">Cancel</button>
-        </div>
-    </div>
-}
+            <div class="vp-row-actions">
+                <button class="btn-primary-action" @onclick="UpdateStatusAsync">Gem</button>
+                <button class="vp-btn-edit" @onclick="() => editingStatus = null">Annuller</button>
+            </div>
+        </section>
+    }
 
-@if (statuses == null)
-{
-    <p><em>Loading...</em></p>
-}
-else if (!statuses.Any())
-{
-    <p>No statuses found.</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Colour</th>
-                <th>Available</th>
-                <th>Default</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var s in statuses)
-            {
-                <tr>
-                    <td>@s.Name</td>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div style="width:24px; height:24px; background:@s.Colour; border:1px solid #ccc"></div>
-                            <span>@s.Colour</span>
+    <section class="card-panel list-panel">
+        <div class="panel-heading">
+            <h2>Alle statusser</h2>
+            <span class="count-badge">@(statuses?.Count ?? 0)</span>
+        </div>
+        @if (statuses == null)
+        {
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <span>Indlæser statusser…</span>
+            </div>
+        }
+        else if (!statuses.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-palette2"></i></div>
+                <p>Ingen statusser fundet</p>
+                <span>Opret din første status ovenfor.</span>
+            </div>
+        }
+        else
+        {
+            <div class="department-grid">
+                @foreach (var s in statuses)
+                {
+                    <article class="department-card">
+                        <div class="department-card-body">
+                            <div class="department-icon department-icon--color" style="--status-color:@s.Colour"></div>
+                            <div class="department-card-info">
+                                <h3>@s.Name</h3>
+                                <div class="vp-record-meta">
+                                    <span class="vp-color-chip" style="--chip-color:@s.Colour">@s.Colour</span>
+                                    <span class="vp-pill">Kan tildeles: @(s.IsAvailable ? "Ja" : "Nej")</span>
+                                    <span class="vp-pill">Standard: @(s.Default ? "Ja" : "Nej")</span>
+                                </div>
+                            </div>
                         </div>
-                    </td>
-                    <td>@(s.IsAvailable ? "Yes" : "No")</td>
-                    <td>@(s.Default ? "Yes" : "No")</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(s)">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteStatusAsync(s)">Delete</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+                        <div class="department-card-actions">
+                            <button class="btn-edit" @onclick="() => StartEdit(s)">
+                                <i class="bi bi-pencil"></i>
+                                Rediger
+                            </button>
+                            <button class="btn-delete" @onclick="() => DeleteStatusAsync(s)">
+                                <i class="bi bi-trash3"></i>
+                                Slet
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet status?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet status"
+    IsProcessing="_isDeleting"
+    OnConfirm="ConfirmDeleteStatusAsync"
+    OnCancel="CancelDeleteStatus" />
 
 @code {
     private List<StatusDto>? statuses;
     private bool showCreate;
+    private string? errorMessage;
 
     private StatusRequest newStatus = new StatusRequest { Colour = "#ffffff" };
 
     private StatusDto? editingStatus;
     private StatusRequest editModel = new StatusRequest { Colour = "#ffffff" };
+    private StatusDto? _pendingDeleteStatus;
+    private bool _showDeleteConfirm;
+    private bool _isDeleting;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadStatuses();
+        try
+        {
+            await LoadStatuses();
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
     }
 
     private async Task LoadStatuses()
@@ -133,16 +179,33 @@ else
 
     private async Task CreateStatusAsync()
     {
+        errorMessage = null;
+        if (string.IsNullOrWhiteSpace(newStatus.Name))
+        {
+            errorMessage = "Navn må ikke være tomt.";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(newStatus.Colour)) newStatus.Colour = "#ffffff";
         // ensure leading #
         if (!newStatus.Colour.StartsWith("#")) newStatus.Colour = "#" + newStatus.Colour;
 
-        var created = await StatusService.CreateAsync(newStatus);
-        if (created != null)
+        try
         {
-            newStatus = new StatusRequest { Colour = "#ffffff" };
-            showCreate = false;
-            await LoadStatuses();
+            var created = await StatusService.CreateAsync(newStatus);
+            if (created != null)
+            {
+                newStatus = new StatusRequest { Colour = "#ffffff" };
+                showCreate = false;
+                await LoadStatuses();
+            }
+            else
+            {
+                errorMessage = "Kunne ikke oprette status.";
+            }
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
         }
     }
 
@@ -161,27 +224,88 @@ else
     private async Task UpdateStatusAsync()
     {
         if (editingStatus == null) return;
+        errorMessage = null;
+        if (string.IsNullOrWhiteSpace(editModel.Name))
+        {
+            errorMessage = "Navn må ikke være tomt.";
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(editModel.Colour)) editModel.Colour = "#ffffff";
         if (!editModel.Colour.StartsWith("#")) editModel.Colour = "#" + editModel.Colour;
 
-        var ok = await StatusService.UpdateAsync(editingStatus.Id, editModel);
-        if (ok)
+        try
         {
-            editingStatus = null;
-            await LoadStatuses();
+            var ok = await StatusService.UpdateAsync(editingStatus.Id, editModel);
+            if (ok)
+            {
+                editingStatus = null;
+                await LoadStatuses();
+            }
+            else
+            {
+                errorMessage = "Kunne ikke gemme status.";
+            }
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
         }
     }
 
-    private async Task DeleteStatusAsync(StatusDto s)
+    private void DeleteStatusAsync(StatusDto s)
     {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete status '{s.Name}'?");
-        if (!confirmed) return;
+        _pendingDeleteStatus = s;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette status '{s.Name}'? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
 
-        var ok = await StatusService.DeleteAsync(s.Id);
-        if (ok)
+    private void CancelDeleteStatus()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteStatus = null;
+    }
+
+    private async Task ConfirmDeleteStatusAsync()
+    {
+        if (_pendingDeleteStatus == null) return;
+
+        _isDeleting = true;
+        errorMessage = null;
+
+        try
         {
-            await LoadStatuses();
+            var ok = await StatusService.DeleteAsync(_pendingDeleteStatus.Id);
+            if (ok) await LoadStatuses();
+            else errorMessage = "Kunne ikke slette status.";
         }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
+        finally
+        {
+            _isDeleting = false;
+            _showDeleteConfirm = false;
+            _pendingDeleteStatus = null;
+        }        
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
     }
 }

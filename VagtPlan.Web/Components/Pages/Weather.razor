@@ -4,40 +4,57 @@
 
 @inject WeatherApiClient WeatherApi
 
-<PageTitle>Weather</PageTitle>
+<PageTitle>Vejr — VagtPlan</PageTitle>
 
-<h1>Weather</h1>
-
-<p>This component demonstrates showing data loaded from a backend API service.</p>
+<div class="departments-page">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Demo</p>
+            <h1>Vejr</h1>
+            <p class="page-subtitle">Viser eksempeldata hentet fra API.</p>
+        </div>
+    </header>
 
 @if (forecasts == null)
 {
-    <p><em>Loading...</em></p>
+    <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Henter vejrdata…</span>
+    </div>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th aria-label="Temperature in Celsius">Temp. (C)</th>
-                <th aria-label="Temperature in Fahrenheit">Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <section class="card-panel list-panel">
+        <div class="panel-heading">
+            <h2>Prognose</h2>
+            <span class="count-badge">@forecasts.Length</span>
+        </div>
+        <div style="overflow:auto; max-width:100%;">
+            <table class="table table-sm table-bordered align-middle" style="white-space:nowrap;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Dato</th>
+                        <th aria-label="Temperatur i Celsius">Temp. (°C)</th>
+                        <th aria-label="Temperatur i Fahrenheit">Temp. (°F)</th>
+                        <th>Opsummering</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var forecast in forecasts)
+                    {
+                        <tr>
+                            <td>@forecast.Date.ToShortDateString()</td>
+                            <td>@forecast.TemperatureC</td>
+                            <td>@forecast.TemperatureF</td>
+                            <td>@forecast.Summary</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 }
+</div>
 
 @code {
     private WeatherForecast[]? forecasts;

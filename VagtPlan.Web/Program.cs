@@ -32,9 +32,10 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.UserApiClient>(client =>
 builder.Services.AddScoped<VagtPlan.Web.Services.UserApiClient>(sp =>
 {
     var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var authState = sp.GetRequiredService<VagtPlan.Web.Services.ApiAuthState>();
     var client = factory.CreateClient();
     client.BaseAddress = new("https+http://apiservice");
-    return new VagtPlan.Web.Services.UserApiClient(client);
+    return new VagtPlan.Web.Services.UserApiClient(client, authState);
 });
 
 builder.Services.AddHttpClient<VagtPlan.Web.Services.DepartmentApiClient>(client =>

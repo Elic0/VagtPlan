@@ -1,102 +1,160 @@
 ﻿@page "/schedule"
 @rendermode InteractiveServer
 @using VagtPlan.Web.Services
+@using System.Globalization
 @inject WorkDayService WorkDayService
-@inject IJSRuntime JS
 @inject UserService UserService
 @inject StatusService StatusService
+@inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 
-<h3>Schedule</h3>
+<PageTitle>Vagtplan — VagtPlan</PageTitle>
 
-<div class="card mb-3">
-    <div class="card-body d-flex align-items-center">
-        <button class="btn btn-outline-secondary me-2" @onclick="PrevMonth">&lt;</button>
-        <div class="me-3"><strong>@DisplayedMonth.ToString("MMMM yyyy")</strong></div>
-        <button class="btn btn-outline-secondary me-3" @onclick="NextMonth">&gt;</button>
+<div class="departments-page page-wide">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Vagtplan</p>
+            <h1>Vagtplan</h1>
+            <p class="page-subtitle">Overblik over arbejdsdage, statusser og tildelinger.</p>
+        </div>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert-banner" role="alert">@errorMessage</div>
+    }
 
-        <div class="ms-auto">
-            <label class="form-check-label me-2">Show only users with assignments</label>
+<section class="card-panel">
+    <div class="schedule-toolbar">
+        <div class="schedule-month-nav">
+            <button class="btn btn-outline-secondary" @onclick="PrevMonth" aria-label="Forrige måned">&lt;</button>
+            <strong>@DisplayedMonth.ToString("MMMM yyyy", DanishCulture)</strong>
+            <button class="btn btn-outline-secondary" @onclick="NextMonth" aria-label="Næste måned">&gt;</button>
+        </div>
+        <div class="schedule-filter">
+            <label class="form-check-label">Vis kun brugere med tildelinger</label>
             <input type="checkbox" class="form-check-input" @bind="showOnlyWithAssignments" />
         </div>
     </div>
-</div>
+</section>
 
 @if (users == null || statuses == null || workdays == null)
 {
-    <div>Loading…</div>
+    <section class="card-panel">
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Indlæser vagtplan…</span>
+        </div>
+    </section>
 }
 else
 {
-    <div style="overflow:auto; max-width:100%;">
-        <table class="table table-sm table-bordered align-middle" style="white-space:nowrap;">
-            <thead class="table-light">
-                <tr>
-                    <th style="min-width:180px">User</th>
-                    @foreach (var d in MonthDays)
-                    {
-                        <th style="width:48px; text-align:center; vertical-align:middle;">
-                            <div>@d.Day</div>
-                            <div style="font-size:0.75rem; color:#666;">@d.ToDateTime(new TimeOnly()).ToString("ddd")</div>
-                        </th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var u in FilteredUsers)
-                {
-                    <tr>
-                        <td style="vertical-align:middle;">@u.Name</td>
-                        @foreach (var d in MonthDays)
+    <section class="card-panel list-panel">
+        <div class="panel-heading">
+            <h2>Månedsoversigt</h2>
+            <span class="count-badge">@FilteredUsers.Count()</span>
+        </div>
+        @if (!FilteredUsers.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-calendar3"></i></div>
+                <p>Ingen brugere at vise</p>
+                <span>Prøv at slå filteret fra eller vælg en anden måned.</span>
+            </div>
+        }
+        else
+        {
+            <div class="vp-schedule-table-wrap">
+                <table class="table table-sm table-bordered align-middle vp-schedule-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Bruger</th>
+                            @foreach (var d in MonthDays)
+                            {
+                                <th>
+                                    <div class="schedule-day-num">@d.Day</div>
+                                    <div class="schedule-day-name">@d.ToDateTime(new TimeOnly()).ToString("ddd", DanishCulture)</div>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in FilteredUsers)
                         {
-                            var w = GetWorkdayFor(u.Id, d);
-                            var color = w != null ? GetStatusColour(w.StatusId) : "transparent";
-                            var tooltip = w != null ? ($"{GetStatusName(w.StatusId)}\n{w.StartTime:hh\\:mm} - {w.EndTime:hh\\:mm}") : string.Empty;
-                            var isWeekend = d.ToDateTime(new TimeOnly()).DayOfWeek == DayOfWeek.Saturday || d.ToDateTime(new TimeOnly()).DayOfWeek == DayOfWeek.Sunday;
-                            // determine cell background and additional style for weekends
-                            string cellBg;
-                            string extraStyle = string.Empty;
-                            if (isWeekend)
-                            {
-                                if (color == "transparent") cellBg = "#f4f4f4"; else { cellBg = color; extraStyle = "filter:grayscale(100%) opacity(0.6);"; }
-                            }
-                            else
-                            {
-                                cellBg = color;
-                            }
-
-                            var cellStyle = $"padding:4px; text-align:center; background:{cellBg}; {extraStyle}";
-
-                            <td style="@cellStyle; cursor:@(w != null ? "pointer" : "default")"
-                                @onmouseenter="@( (Microsoft.AspNetCore.Components.Web.MouseEventArgs e) => ShowTooltip(tooltip, e) )"
-                                @onmousemove="@( (Microsoft.AspNetCore.Components.Web.MouseEventArgs e) => MoveTooltip(e) )"
-                                @onmouseleave="HideTooltip"
-                                @onclick="@( () => OnCellClick(w) )">
-                                @if (w != null)
+                            <tr>
+                                <td>@u.Name</td>
+                                @foreach (var d in MonthDays)
                                 {
-                                    <span style="display:block; width:100%; height:100%;"></span>
+                                    var w = GetWorkdayFor(u.Id, d);
+                                    var color = w != null ? GetStatusColour(w.StatusId) : "transparent";
+                                    var tooltip = w != null ? ($"{GetStatusName(w.StatusId)}\n{w.StartTime:hh\\:mm} - {w.EndTime:hh\\:mm}") : string.Empty;
+                                    var isWeekend = d.ToDateTime(new TimeOnly()).DayOfWeek == DayOfWeek.Saturday || d.ToDateTime(new TimeOnly()).DayOfWeek == DayOfWeek.Sunday;
+                                    string cellBg;
+                                    string extraStyle = string.Empty;
+                                    if (isWeekend)
+                                    {
+                                        if (color == "transparent") cellBg = "#f4f4f4"; else { cellBg = color; extraStyle = "filter:grayscale(100%) opacity(0.6);"; }
+                                    }
+                                    else
+                                    {
+                                        cellBg = color;
+                                    }
+
+                                    var cellStyle = $"text-align:center; background:{cellBg}; {extraStyle}";
+
+                                    <td style="@cellStyle; cursor:@(w != null ? "pointer" : "default")"
+                                        @onmouseenter="@( (Microsoft.AspNetCore.Components.Web.MouseEventArgs e) => ShowTooltip(tooltip, e) )"
+                                        @onmousemove="@( (Microsoft.AspNetCore.Components.Web.MouseEventArgs e) => MoveTooltip(e) )"
+                                        @onmouseleave="HideTooltip"
+                                        @onclick="@( () => OnCellClick(w) )">
+                                        @if (w != null)
+                                        {
+                                            <span style="display:block; width:100%; min-height:20px;"></span>
+                                        }
+                                    </td>
                                 }
-                            </td>
+                            </tr>
                         }
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 }
+</div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet arbejdsdag?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet arbejdsdag"
+    IsProcessing="_isDeleting"
+    OnConfirm="ConfirmDeleteEditAsync"
+    OnCancel="CancelDeleteEdit" />
 
 @code {
-    private List<UserDto>? users;
+    private List<UserListItemDto>? users;
     private List<WorkDayDto>? workdays;
     private List<StatusDto>? statuses;
 
     private DateTime DisplayedMonth = DateTime.Today;
     private List<DateOnly> MonthDays = new();
     private bool showOnlyWithAssignments = false;
+    private static readonly CultureInfo DanishCulture = CultureInfo.GetCultureInfo("da-DK");
+    private string? errorMessage;
+    private bool _showDeleteConfirm;
+    private bool _isDeleting;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAllAsync();
-        BuildMonthDays();
+        try
+        {
+            await LoadAllAsync();
+            BuildMonthDays();
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
     }
 
     private async Task LoadAllAsync()
@@ -113,14 +171,17 @@ else
         MonthDays = Enumerable.Range(1, daysInMonth).Select(d => DateOnly.FromDateTime(new DateTime(first.Year, first.Month, d))).ToList();
     }
 
-    private IEnumerable<UserDto> FilteredUsers
+    private IEnumerable<UserListItemDto> FilteredUsers
     {
         get
         {
-            if (users == null) return Enumerable.Empty<UserDto>();
-            if (!showOnlyWithAssignments || workdays == null) return users;
+            if (users == null) return Enumerable.Empty<UserListItemDto>();
+            if (!showOnlyWithAssignments || workdays == null)
+            {
+                return users.OrderBy(u => u.Name, System.StringComparer.OrdinalIgnoreCase);
+            }
             var assignedUserIds = new HashSet<int>(workdays.Where(w => w.Date.Year == DisplayedMonth.Year && w.Date.Month == DisplayedMonth.Month).Select(w => w.UserId));
-            return users.Where(u => assignedUserIds.Contains(u.Id));
+            return users.Where(u => assignedUserIds.Contains(u.Id)).OrderBy(u => u.Name, System.StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -256,10 +317,18 @@ else
             UserId = EditingWorkday.UserId
         };
 
-        var success = await WorkDayService.UpdateAsync(EditingWorkday.Id, req);
+        bool success;
+        try
+        {
+            success = await WorkDayService.UpdateAsync(EditingWorkday.Id, req);
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+            return;
+        }
         if (!success)
         {
-            await JS.InvokeVoidAsync("alert", "Failed to save workday.");
+            errorMessage = "Kunne ikke gemme arbejdsdag.";
             return;
         }
 
@@ -267,18 +336,65 @@ else
         IsModalOpen = false;
     }
 
-    private async Task DeleteEditAsync()
+    private void DeleteEditAsync()
     {
         if (EditingWorkday == null) return;
-        var ok = await WorkDayService.DeleteAsync(EditingWorkday.Id);
-        if (!ok)
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette arbejdsdagen for {users?.FirstOrDefault(u => u.Id == EditingWorkday.UserId)?.Name ?? "brugeren"} den {EditingWorkday.Date:dd-MM-yyyy}?";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDeleteEdit()
+    {
+        _showDeleteConfirm = false;
+    }
+
+    private async Task ConfirmDeleteEditAsync()
+    {
+        if (EditingWorkday == null) return;
+        _isDeleting = true;
+        errorMessage = null;
+
+        try
         {
-            await JS.InvokeVoidAsync("alert", "Failed to delete workday.");
-            return;
+            var ok = await WorkDayService.DeleteAsync(EditingWorkday.Id);
+            if (!ok)
+            {
+                errorMessage = "Kunne ikke slette arbejdsdag.";
+                return;
+            }
+
+            await LoadAllAsync();
+            IsModalOpen = false;
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
+        finally
+        {
+            _isDeleting = false;
+            _showDeleteConfirm = false;
+        }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
         }
 
-        await LoadAllAsync();
-        IsModalOpen = false;
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        errorMessage = "Kunne ikke hente data. Tjek at API'et kører.";
+        return false;
     }
 }
 
@@ -295,14 +411,14 @@ else
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Workday</h5>
+                    <h5 class="modal-title">Rediger arbejdsdag</h5>
                     <button type="button" class="btn-close" @onclick="(() => IsModalOpen = false)"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-2">
-                        <label class="form-label">User</label>
+                        <label class="form-label">Bruger</label>
                         <select class="form-select" @bind="EditingWorkday.UserId">
-                            @foreach (var u in users ?? Enumerable.Empty<UserDto>())
+                            @foreach (var u in users ?? Enumerable.Empty<UserListItemDto>())
                             {
                                 <option value="@u.Id">@u.Name</option>
                             }
@@ -315,7 +431,7 @@ else
                             <input class="form-control" type="time" value="@BindStartTime" @oninput="OnStartTimeInput" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">End</label>
+                            <label class="form-label">Slut</label>
                             <input class="form-control" type="time" value="@BindEndTime" @oninput="OnEndTimeInput" />
                         </div>
                     </div>
@@ -331,14 +447,14 @@ else
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Date</label>
+                        <label class="form-label">Dato</label>
                         <input class="form-control" type="date" value="@BindDate" @onchange="OnDateInput" />
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-danger" @onclick="DeleteEditAsync">Delete</button>
-                    <button class="btn btn-primary" @onclick="SaveEditAsync">Save</button>
-                    <button class="btn btn-secondary" @onclick="(() => IsModalOpen = false)">Cancel</button>
+                    <button class="btn btn-danger" @onclick="DeleteEditAsync">Slet</button>
+                    <button class="btn btn-primary" @onclick="SaveEditAsync">Gem</button>
+                    <button class="btn btn-secondary" @onclick="(() => IsModalOpen = false)">Annuller</button>
                 </div>
             </div>
         </div>

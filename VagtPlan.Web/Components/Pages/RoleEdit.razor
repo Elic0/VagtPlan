@@ -3,6 +3,7 @@
 @using VagtPlan.Web.Services
 @inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 @rendermode InteractiveServer
 
 <PageTitle>@(_userRole?.Name ?? "Rolle") — Rediger</PageTitle>
@@ -74,6 +75,15 @@
     }
 </div>
 
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet rolle?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet rolle"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteRoleAsync"
+    OnCancel="CancelDeleteRole" />
+
 @code {
     [Parameter]
     public int RoleId { get; set; }
@@ -83,6 +93,8 @@
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _error;
+    private bool _showDeleteConfirm;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -102,9 +114,12 @@
                 _form.Name = _userRole.Name;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke hente rolle. Tjek at API'et kører.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke hente rolle. Tjek at API'et kører.";
+            }
         }
         finally
         {
@@ -130,9 +145,12 @@
             await UserRoleApi.UpdateAsync(RoleId, _form);
             Navigation.NavigateTo("/role");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke gemme rolle.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke gemme rolle.";
+            }
         }
         finally
         {
@@ -142,8 +160,18 @@
 
     private async Task DeleteRoleAsync()
     {
-        var confirmed = true;
-        if (!confirmed) return;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette rollen '{_userRole?.Name ?? _form.Name}'?";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDeleteRole()
+    {
+        _showDeleteConfirm = false;
+    }
+
+    private async Task ConfirmDeleteRoleAsync()
+    {
+        _showDeleteConfirm = false;
 
         _isSaving = true;
         _error = null;
@@ -153,13 +181,38 @@
             await UserRoleApi.DeleteAsync(RoleId);
             Navigation.NavigateTo("/role");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke slette rolle.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke slette rolle.";
+            }
         }
         finally
         {
             _isSaving = false;
         }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
     }
 }
