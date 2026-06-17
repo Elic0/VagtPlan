@@ -5,7 +5,9 @@ services:
       - "80:80"
 
   api:
-    build: ./VagtPlan.ApiService
+    build:
+      context: .
+      dockerfile: VagtPlan.ApiService/Dockerfile
     ports:
       - "3000:3000"
 
