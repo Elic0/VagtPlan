@@ -4,15 +4,15 @@ services:
     ports:
       - "80:80"
 
-    api:
-      build: ./VagtPlan.ApiService
-      ports:
-        - "3000:3000"
+  api:
+    build: ./VagtPlan.ApiService
+    ports:
+      - "3000:3000"
 
-    db: 
-      image: postgres
-      volumes:
-        - db-data:/var/lib/postgresql/data
+  db:
+    image: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
 
 networks:
   default:
