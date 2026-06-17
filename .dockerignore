@@ -3,4 +3,6 @@
 **/.git
 **/.vs
 *.user
-docker-compose.yaml
+docker-compose*.yaml
+docker-compose*.yml
+.env
