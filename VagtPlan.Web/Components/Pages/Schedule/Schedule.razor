@@ -1,0 +1,347 @@
+﻿@page "/schedule"
+@rendermode InteractiveServer
+@using VagtPlan.Web.Services
+@inject WorkDayService WorkDayService
+@inject IJSRuntime JS
+@inject UserService UserService
+@inject StatusService StatusService
+
+<h3>Schedule</h3>
+
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center">
+        <button class="btn btn-outline-secondary me-2" @onclick="PrevMonth">&lt;</button>
+        <div class="me-3"><strong>@DisplayedMonth.ToString("MMMM yyyy")</strong></div>
+        <button class="btn btn-outline-secondary me-3" @onclick="NextMonth">&gt;</button>
+
+        <div class="ms-auto">
+            <label class="form-check-label me-2">Show only users with assignments</label>
+            <input type="checkbox" class="form-check-input" @bind="showOnlyWithAssignments" />
+        </div>
+    </div>
+</div>
+
+@if (users == null || statuses == null || workdays == null)
+{
+    <div>Loading…</div>
+}
+else
+{
+    <div style="overflow:auto; max-width:100%;">
+        <table class="table table-sm table-bordered align-middle" style="white-space:nowrap;">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width:180px">User</th>
+                    @foreach (var d in MonthDays)
+                    {
+                        <th style="width:48px; text-align:center; vertical-align:middle;">
+                            <div>@d.Day</div>
+                            <div style="font-size:0.75rem; color:#666;">@d.ToDateTime(new TimeOnly()).ToString("ddd")</div>
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in FilteredUsers)
+                {
+                    <tr>
+                        <td style="vertical-align:middle;">@u.Name</td>
+                        @foreach (var d in MonthDays)
+                        {
+                            var w = GetWorkdayFor(u.Id, d);
+                            var color = w != null ? GetStatusColour(w.StatusId) : "transparent";
+                            var tooltip = w != null ? ($"{GetStatusName(w.StatusId)}\n{w.StartTime:hh\\:mm} - {w.EndTime:hh\\:mm}") : string.Empty;
+                            var isWeekend = d.ToDateTime(new TimeOnly()).DayOfWeek == DayOfWeek.Saturday || d.ToDateTime(new TimeOnly()).DayOfWeek == DayOfWeek.Sunday;
+                            // determine cell background and additional style for weekends
+                            string cellBg;
+                            string extraStyle = string.Empty;
+                            if (isWeekend)
+                            {
+                                if (color == "transparent") cellBg = "#f4f4f4"; else { cellBg = color; extraStyle = "filter:grayscale(100%) opacity(0.6);"; }
+                            }
+                            else
+                            {
+                                cellBg = color;
+                            }
+
+                            var cellStyle = $"padding:4px; text-align:center; background:{cellBg}; {extraStyle}";
+
+                            <td style="@cellStyle; cursor:@(w != null ? "pointer" : "default")"
+                                @onmouseenter="@( (Microsoft.AspNetCore.Components.Web.MouseEventArgs e) => ShowTooltip(tooltip, e) )"
+                                @onmousemove="@( (Microsoft.AspNetCore.Components.Web.MouseEventArgs e) => MoveTooltip(e) )"
+                                @onmouseleave="HideTooltip"
+                                @onclick="@( () => OnCellClick(w) )">
+                                @if (w != null)
+                                {
+                                    <span style="display:block; width:100%; height:100%;"></span>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<UserDto>? users;
+    private List<WorkDayDto>? workdays;
+    private List<StatusDto>? statuses;
+
+    private DateTime DisplayedMonth = DateTime.Today;
+    private List<DateOnly> MonthDays = new();
+    private bool showOnlyWithAssignments = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllAsync();
+        BuildMonthDays();
+    }
+
+    private async Task LoadAllAsync()
+    {
+        users = (await UserService.GetAllAsync()).OrderBy(u => u.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+        statuses = (await StatusService.GetAllAsync()).ToList();
+        workdays = (await WorkDayService.GetAllAsync()).ToList();
+    }
+
+    private void BuildMonthDays()
+    {
+        var first = new DateTime(DisplayedMonth.Year, DisplayedMonth.Month, 1);
+        var daysInMonth = DateTime.DaysInMonth(first.Year, first.Month);
+        MonthDays = Enumerable.Range(1, daysInMonth).Select(d => DateOnly.FromDateTime(new DateTime(first.Year, first.Month, d))).ToList();
+    }
+
+    private IEnumerable<UserDto> FilteredUsers
+    {
+        get
+        {
+            if (users == null) return Enumerable.Empty<UserDto>();
+            if (!showOnlyWithAssignments || workdays == null) return users;
+            var assignedUserIds = new HashSet<int>(workdays.Where(w => w.Date.Year == DisplayedMonth.Year && w.Date.Month == DisplayedMonth.Month).Select(w => w.UserId));
+            return users.Where(u => assignedUserIds.Contains(u.Id));
+        }
+    }
+
+    private WorkDayDto? GetWorkdayFor(int userId, DateOnly date)
+    {
+        return workdays?.FirstOrDefault(w => w.UserId == userId && w.Date == date);
+    }
+
+    private string GetStatusColour(int statusId)
+    {
+        var s = statuses?.FirstOrDefault(x => x.Id == statusId);
+        if (s == null) return "transparent";
+        // Ensure the colour string is valid CSS; assume stored as hex or named colour
+        return string.IsNullOrWhiteSpace(s.Colour) ? "transparent" : s.Colour;
+    }
+
+    private string GetStatusName(int statusId)
+    {
+        return statuses?.FirstOrDefault(x => x.Id == statusId)?.Name ?? string.Empty;
+    }
+
+    private void PrevMonth()
+    {
+        DisplayedMonth = DisplayedMonth.AddMonths(-1);
+        BuildMonthDays();
+    }
+
+    private void NextMonth()
+    {
+        DisplayedMonth = DisplayedMonth.AddMonths(1);
+        BuildMonthDays();
+    }
+
+    // Tooltip state for custom fast tooltip
+    private bool TooltipVisible { get; set; } = false;
+    private string TooltipText { get; set; } = string.Empty;
+    private double TooltipLeft { get; set; }
+    private double TooltipTop { get; set; }
+
+    private void ShowTooltip(string text, Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        TooltipText = text ?? string.Empty;
+        TooltipVisible = !string.IsNullOrEmpty(TooltipText);
+        TooltipLeft = e.ClientX + 12; // offset from cursor
+        TooltipTop = e.ClientY + 12;
+        StateHasChanged();
+    }
+
+    private void MoveTooltip(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (!TooltipVisible) return;
+        TooltipLeft = e.ClientX + 12;
+        TooltipTop = e.ClientY + 12;
+    }
+
+    private void HideTooltip()
+    {
+        TooltipVisible = false;
+        TooltipText = string.Empty;
+    }
+
+    // helpers for binding inputs
+    private string BindStartTime
+    {
+        get => EditingWorkday != null ? EditingWorkday.StartTime.ToString("hh\\:mm") : string.Empty;
+    }
+
+    private string BindEndTime
+    {
+        get => EditingWorkday != null ? EditingWorkday.EndTime.ToString("hh\\:mm") : string.Empty;
+    }
+
+    private string BindDate
+    {
+        get => EditingWorkday != null ? EditingWorkday.Date.ToDateTime(new TimeOnly()).ToString("yyyy-MM-dd") : string.Empty;
+    }
+
+    private void OnStartTimeInput(ChangeEventArgs e)
+    {
+        if (EditingWorkday == null) return;
+        var val = e?.Value?.ToString();
+        if (TimeOnly.TryParse(val, out var t)) EditingWorkday.StartTime = t;
+    }
+
+    private void OnEndTimeInput(ChangeEventArgs e)
+    {
+        if (EditingWorkday == null) return;
+        var val = e?.Value?.ToString();
+        if (TimeOnly.TryParse(val, out var t)) EditingWorkday.EndTime = t;
+    }
+
+    private void OnDateInput(ChangeEventArgs e)
+    {
+        if (EditingWorkday == null) return;
+        var val = e?.Value?.ToString();
+        if (DateTime.TryParse(val, out var dt)) EditingWorkday.Date = DateOnly.FromDateTime(dt.Date);
+    }
+
+    // Edit modal state
+    private bool IsModalOpen { get; set; }
+    private WorkDayDto? EditingWorkday { get; set; }
+
+    private void OnCellClick(WorkDayDto? w)
+    {
+        if (w == null)
+        {
+            return; // nothing to edit
+        }
+
+        // create a shallow copy for editing
+        EditingWorkday = new WorkDayDto
+        {
+            Id = w.Id,
+            Date = w.Date,
+            StartTime = w.StartTime,
+            EndTime = w.EndTime,
+            StatusId = w.StatusId,
+            UserId = w.UserId
+        };
+        IsModalOpen = true;
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (EditingWorkday == null) return;
+
+        var req = new WorkDayRequest
+        {
+            Date = EditingWorkday.Date,
+            StartTime = EditingWorkday.StartTime,
+            EndTime = EditingWorkday.EndTime,
+            StatusId = EditingWorkday.StatusId,
+            UserId = EditingWorkday.UserId
+        };
+
+        var success = await WorkDayService.UpdateAsync(EditingWorkday.Id, req);
+        if (!success)
+        {
+            await JS.InvokeVoidAsync("alert", "Failed to save workday.");
+            return;
+        }
+
+        await LoadAllAsync();
+        IsModalOpen = false;
+    }
+
+    private async Task DeleteEditAsync()
+    {
+        if (EditingWorkday == null) return;
+        var ok = await WorkDayService.DeleteAsync(EditingWorkday.Id);
+        if (!ok)
+        {
+            await JS.InvokeVoidAsync("alert", "Failed to delete workday.");
+            return;
+        }
+
+        await LoadAllAsync();
+        IsModalOpen = false;
+    }
+}
+
+@if (TooltipVisible)
+{
+    <div style="position:fixed; left:@(TooltipLeft)px; top:@(TooltipTop)px; background:#222; color:#fff; padding:6px 8px; border-radius:4px; font-size:0.85rem; white-space:pre-line; box-shadow:0 2px 6px rgba(0,0,0,0.3); pointer-events:none; z-index:2000;">
+        @TooltipText
+    </div>
+}
+
+@if (IsModalOpen && EditingWorkday != null)
+{
+    <div class="modal fade show" style="display:block; background:rgba(0,0,0,0.4);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Workday</h5>
+                    <button type="button" class="btn-close" @onclick="(() => IsModalOpen = false)"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label">User</label>
+                        <select class="form-select" @bind="EditingWorkday.UserId">
+                            @foreach (var u in users ?? Enumerable.Empty<UserDto>())
+                            {
+                                <option value="@u.Id">@u.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row g-2">
+                    <div class="col-md-6 mb-2">
+                            <label class="form-label">Start</label>
+                            <input class="form-control" type="time" value="@BindStartTime" @oninput="OnStartTimeInput" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">End</label>
+                            <input class="form-control" type="time" value="@BindEndTime" @oninput="OnEndTimeInput" />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" @bind="EditingWorkday.StatusId">
+                            @foreach (var s in statuses ?? Enumerable.Empty<StatusDto>())
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Date</label>
+                        <input class="form-control" type="date" value="@BindDate" @onchange="OnDateInput" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" @onclick="DeleteEditAsync">Delete</button>
+                    <button class="btn btn-primary" @onclick="SaveEditAsync">Save</button>
+                    <button class="btn btn-secondary" @onclick="(() => IsModalOpen = false)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+

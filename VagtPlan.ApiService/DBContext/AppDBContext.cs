@@ -17,6 +17,7 @@ namespace ApiService.DBContext
         public DbSet<Models.Substitute> Substitutes { get; set; }
         public DbSet<Models.Status> Statuses { get; set; }
         public DbSet<Models.WorkTime> WorkTimes { get; set; }
+        public DbSet<Models.SpecialWish> SpecialWishes { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

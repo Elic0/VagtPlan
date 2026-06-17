@@ -1,5 +1,6 @@
 using VagtPlan.Web;
 using VagtPlan.Web.Components;
+using VagtPlan.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,33 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.WorkTimeApiClient>(client =
     {
         client.BaseAddress = new("https+http://apiservice");
     });
+
+// StatusService
+builder.Services.AddHttpClient<StatusService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+// WishService
+builder.Services.AddHttpClient<WishService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+// Simple user client for selecting users
+builder.Services.AddHttpClient<UserService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+builder.Services.AddHttpClient<WorkDayService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
 
 builder.Services.AddHttpClient<VagtPlan.Web.Services.AuthApiClient>(client =>
     {

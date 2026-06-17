@@ -1,0 +1,221 @@
+﻿@page "/specialwishes"
+@rendermode InteractiveServer
+@using VagtPlan.Web.Services
+@inject WishService WishService
+@inject UserService UserService
+@inject StatusService StatusService
+@inject IJSRuntime JS
+
+<h3>Special Wishes</h3>
+
+<div class="row mb-3">
+    <div class="col-4">
+        <label class="form-label">Select Users</label>
+        <div style="max-height:300px; overflow:auto; border:1px solid #ddd; padding:8px;"> 
+            @if (users != null)
+            {
+                @foreach (var u in users)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="user_@u.Id" checked="@selectedUserIds.Contains(u.Id)" @onclick="() => ToggleUser(u.Id)" />
+                        <label class="form-check-label" for="user_@u.Id">@u.Name</label>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    <div class="col-8">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Create Wishes for Selected Users</h5>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" @bind="createModel.StartDate" disabled="@IsStatusDefault(createModel.StatusId)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" @bind="createModel.EndDate" disabled="@IsStatusDefault(createModel.StatusId)" />
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Days of week</label>
+                    <div class="d-flex gap-2">
+                        @foreach (var d in Days)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day_@d" @bind="daySelections[d]" />
+                                <label class="form-check-label" for="day_@d">@d</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" @bind="createModel.StatusId">
+                        <option value="0">-- select status --</option>
+                        @if (statuses != null)
+                        {
+                            @foreach (var s in statuses)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <button class="btn btn-success" @onclick="CreateWishesAsync">Create Wishes</button>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h5>Existing Wishes</h5>
+            @if (wishes == null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else if (!wishes.Any())
+            {
+                <p>No wishes found.</p>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Day</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in wishes)
+                        {
+                            <tr>
+                                <td>@(GetUserName(w.UserId))</td>
+                                <td>@w.DayOfWeek</td>
+                                <td>@(w.StartDate.HasValue ? w.StartDate.Value.ToLocalTime().ToShortDateString() : "-")</td>
+                                <td>@(w.EndDate.HasValue ? w.EndDate.Value.ToLocalTime().ToShortDateString() : "-")</td>
+                                <td>@(GetStatusName(w.StatusId))</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteWishAsync(w)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<UserDto>? users;
+    private List<SpecialWishDto>? wishes;
+    private List<StatusDto>? statuses;
+
+    private Dictionary<string, bool> daySelections = new();
+    private static readonly string[] Days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" };
+
+    private CreateModel createModel = new();
+
+    private HashSet<int> selectedUserIds = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var d in Days) daySelections[d] = false;
+        await LoadUsers();
+        await LoadStatuses();
+        await LoadWishes();
+    }
+
+    private async Task LoadUsers() => users = (await UserService.GetAllAsync()).OrderBy(u => u.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+    private async Task LoadStatuses() => statuses = (await StatusService.GetAllAsync()).OrderBy(s => s.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+    private async Task LoadWishes() => wishes = (await WishService.GetAllAsync()).OrderBy(w => GetUserName(w.UserId) ?? string.Empty).ThenBy(w => w.DayOfWeek).ToList();
+
+    private void ToggleUser(int id)
+    {
+        if (selectedUserIds.Contains(id)) selectedUserIds.Remove(id);
+        else selectedUserIds.Add(id);
+    }
+
+    private bool IsStatusDefault(int statusId)
+    {
+        var s = statuses?.FirstOrDefault(x => x.Id == statusId);
+        return s != null && s.Default;
+    }
+
+    private string? GetUserName(int userId) => users?.FirstOrDefault(u => u.Id == userId)?.Name;
+    private string? GetStatusName(int statusId) => statuses?.FirstOrDefault(s => s.Id == statusId)?.Name;
+
+    private async Task CreateWishesAsync()
+    {
+        if (selectedUserIds == null || !selectedUserIds.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "Please select at least one user.");
+            return;
+        }
+        var selectedDays = daySelections.Where(kv => kv.Value).Select(kv => kv.Key).ToList();
+        if (!selectedDays.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "Please select at least one day.");
+            return;
+        }
+
+        var statusIsDefault = IsStatusDefault(createModel.StatusId);
+
+        if (!statusIsDefault)
+        {
+            if (!createModel.StartDate.HasValue || !createModel.EndDate.HasValue)
+            {
+                await JS.InvokeVoidAsync("alert", "Please specify start and end dates.");
+                return;
+            }
+        }
+
+        var start = createModel.StartDate.HasValue ? createModel.StartDate.Value.Date : DateTime.MinValue;
+        var end = createModel.EndDate.HasValue ? createModel.EndDate.Value.Date : DateTime.MinValue;
+
+        foreach (var uid in selectedUserIds)
+        {
+            foreach (var day in selectedDays)
+            {
+                var req = new SpecialWishRequest
+                {
+                    // If selected status is default, send nulls; otherwise send UTC dates
+                    StartDate = statusIsDefault ? null : start.ToUniversalTime(),
+                    EndDate = statusIsDefault ? null : end.ToUniversalTime(),
+                    DayOfWeek = day,
+                    UserId = uid,
+                    StatusId = createModel.StatusId
+                };
+
+                await WishService.CreateAsync(req);
+            }
+        }
+
+        await LoadWishes();
+    }
+
+    private async Task DeleteWishAsync(SpecialWishDto w)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", $"Delete wish for {GetUserName(w.UserId)} {w.DayOfWeek}? ");
+        if (!ok) return;
+        await WishService.DeleteAsync(w.Id);
+        await LoadWishes();
+    }
+
+    private class CreateModel
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public int StatusId { get; set; }
+    }
+}

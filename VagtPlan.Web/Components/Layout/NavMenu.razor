@@ -39,6 +39,22 @@
                         <i class="bi bi-building" aria-hidden="true"></i>
                         <span>Afdelinger</span>
                     </NavLink>
+                    <NavLink href="statuses" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Statuses</span>
+                    </NavLink>
+                    <NavLink href="specialwishes" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Special wishes</span>
+                    </NavLink>
+                    <NavLink href="scheduler" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Scheduler</span>
+                    </NavLink>
+                    <NavLink href="schedule" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Schedule</span>
+                    </NavLink>
                     @if (AuthState.IsAuthenticated)
                     {
                         <button type="button" class="vp-nav-item vp-nav-logout" @onclick="Logout" aria-label="Log ud">
@@ -87,3 +103,4 @@
         AuthState.Changed -= HandleAuthStateChanged;
     }
 }
+

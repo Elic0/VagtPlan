@@ -1,0 +1,264 @@
+﻿@page "/scheduler"
+@rendermode InteractiveServer
+@using VagtPlan.Web.Services
+@using VagtPlan.Web.Models
+@inject WishService WishService
+@inject UserService UserService
+@inject StatusService StatusService
+@inject WorkDayService WorkDayService
+@inject DepartmentApiClient DepartmentApiClient
+@inject IJSRuntime JS
+
+<h3>Scheduler</h3>
+
+<div class="row">
+    <div class="col-4">
+        <label class="form-label">Select Users</label>
+        <div style="max-height:300px; overflow:auto; border:1px solid #ddd; padding:8px;">
+            @if (users != null)
+            {
+                @foreach (var u in users)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="user_@u.Id" checked="@selectedUserIds.Contains(u.Id)" @onclick="() => ToggleUser(u.Id)" />
+                        <label class="form-check-label" for="user_@u.Id">@u.Name</label>
+                    </div>
+                }
+            }
+        </div>
+        <div class="mt-2">
+            <h6>Assigned counts (last generation)</h6>
+            @if (assignedCounts == null)
+            {
+                <div class="text-muted">No assignments yet</div>
+            }
+            else
+            {
+                <div style="max-height:200px; overflow:auto; border:1px solid #eee; padding:6px; background:#fafafa;">
+                    @foreach (var u in users ?? Enumerable.Empty<UserDto>())
+                    {
+                        var count = assignedCounts.ContainsKey(u.Id) ? assignedCounts[u.Id] : 0;
+                        <div class="d-flex justify-content-between">
+                            <div>@u.Name</div>
+                            <div><strong>@count</strong></div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-8">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Generate Workdays</h5>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Period Start</label>
+                        <input type="date" class="form-control" @bind="model.StartDate" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Period End</label>
+                        <input type="date" class="form-control" @bind="model.EndDate" />
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-2">
+                    <div class="col-md-8">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" @bind="selectedDepartmentId" @bind:event="onchange">
+                            <option value="0">-- select department --</option>
+                            @if (departments != null)
+                            {
+                                @foreach (var d in departments)
+                                {
+                                    <option value="@d.Id">@d.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="filterDept" @bind="filterByDepartment" @bind:event="onchange" />
+                            <label class="form-check-label" for="filterDept">Only show users in department</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Status (system default)</label>
+                    <div class="form-control-plaintext">@DefaultStatusName()</div>
+                </div>
+
+                <div>
+                    <button class="btn btn-primary" @onclick="GenerateAsync">Generate</button>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h5>Created Workdays</h5>
+            @if (createdWorkdays == null)
+            {
+                <p><em>None yet</em></p>
+            }
+            else if (!createdWorkdays.Any())
+            {
+                <p><em>No workdays created</em></p>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in createdWorkdays)
+                        {
+                            <tr>
+                                <td>@w.Date.ToString()</td>
+                                <td>@GetUserName(w.UserId)</td>
+                                <td>@w.StartTime.ToString()</td>
+                                <td>@w.EndTime.ToString()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<UserDto>? users;
+    private List<SpecialWishDto>? wishes;
+    private List<StatusDto>? statuses;
+    private List<DepartmentModel>? departments;
+
+    private int selectedDepartmentId = 0;
+    private bool filterByDepartment = false;
+
+    private HashSet<int> selectedUserIds = new();
+
+    private GenerateModel model = new();
+
+    private List<WorkDayDto>? createdWorkdays;
+    private Dictionary<int, int>? assignedCounts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+        await LoadStatuses();
+        await LoadWishes();
+        await LoadDepartments();
+    }
+    private async Task LoadUsers()
+    {
+        var all = (await UserService.GetAllAsync()).OrderBy(u => u.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+        if (filterByDepartment && selectedDepartmentId != 0)
+        {
+            users = all.Where(u => u.DepartmentId == selectedDepartmentId).ToList();
+        }
+        else
+        {
+            users = all;
+        }
+    }
+    private async Task LoadDepartments() => departments = (await DepartmentApiClient.GetAllAsync()).OrderBy(d => d.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+
+    private async Task OnDepartmentChanged(ChangeEventArgs e)
+    {
+        await LoadUsers();
+    }
+    private async Task LoadStatuses() => statuses = (await StatusService.GetAllAsync()).OrderBy(s => s.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+    private async Task LoadWishes() => wishes = (await WishService.GetAllAsync()).ToList();
+
+    private void ToggleUser(int id)
+    {
+        if (selectedUserIds.Contains(id)) selectedUserIds.Remove(id);
+        else selectedUserIds.Add(id);
+    }
+
+    private string? GetUserName(int userId) => users?.FirstOrDefault(u => u.Id == userId)?.Name;
+
+    private async Task GenerateAsync()
+    {
+        if (!selectedUserIds.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "Please select at least one user.");
+            return;
+        }
+
+        if (filterByDepartment && selectedDepartmentId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a department to filter by.");
+            return;
+        }
+
+        if (!model.StartDate.HasValue || !model.EndDate.HasValue)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select start and end dates.");
+            return;
+        }
+
+        if (model.EndDate < model.StartDate)
+        {
+            await JS.InvokeVoidAsync("alert", "End date must be after start date.");
+            return;
+        }
+
+        // Determine single system default status
+        var defaultStatus = statuses?.FirstOrDefault(s => s.Default);
+        if (defaultStatus == null)
+        {
+            await JS.InvokeVoidAsync("alert", "No default status found in the system.");
+            return;
+        }
+        var defaultStatusIds = new HashSet<int> { defaultStatus.Id };
+
+        // Build a lookup from dayOfWeek -> list of userIds who have a default-status wish for that day
+        var wishesLookup = wishes?
+            .Where(w => defaultStatusIds.Contains(w.StatusId))
+            .GroupBy(w => w.DayOfWeek)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.UserId).Distinct().ToList(), StringComparer.OrdinalIgnoreCase)
+            ?? new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+
+        var start = model.StartDate.Value.Date;
+        var end = model.EndDate.Value.Date;
+
+        // call server to do generation and balancing; server will avoid duplicates with existing workdays
+        var genReq = new GenerateWorkdaysRequest
+        {
+            StartDate = DateOnly.FromDateTime(start),
+            EndDate = DateOnly.FromDateTime(end),
+            SelectedUserIds = selectedUserIds.ToList(),
+            DepartmentId = selectedDepartmentId
+        };
+
+        var genResp = await WorkDayService.GenerateAsync(genReq);
+        if (genResp == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Failed to generate workdays on server.");
+            return;
+        }
+
+        createdWorkdays = genResp.Created;
+        assignedCounts = genResp.AssignedCounts;
+    }
+
+    private class GenerateModel
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+    }
+
+    private string DefaultStatusName()
+    {
+        var s = statuses?.FirstOrDefault(x => x.Default);
+        return s != null ? s.Name : "(no default status)";
+    }
+}

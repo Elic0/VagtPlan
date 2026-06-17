@@ -28,9 +28,9 @@ namespace ApiService.Controllers
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<WishDTO>>> GetWishes()
         {
-            var users =  await _context.Wishes.ToListAsync();
+            var wishes =  await _context.Wishes.ToListAsync();
 
-            return Ok(users);
+            return Ok(wishes);
         }
 
         // GET: api/Wishes/5
