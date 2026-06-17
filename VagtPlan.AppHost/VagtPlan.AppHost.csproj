@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MessagePack" Version="3.1.7" />
+    <PackageReference Include="NuGet.Packaging" Version="7.6.0" />
+    <PackageReference Include="NuGet.Protocol" Version="7.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\VagtPlan.ApiService\ApiService.csproj" />
     <ProjectReference Include="..\VagtPlan.Web\VagtPlan.Web.csproj" />
   </ItemGroup>

@@ -1,5 +1,6 @@
 using VagtPlan.Web;
 using VagtPlan.Web.Components;
+using VagtPlan.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,11 +14,6 @@ builder.Services.AddRazorComponents()
 builder.Services.AddOutputCache();
 
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
-    {
-        client.BaseAddress = new("https+http://apiservice");
-    });
-
-builder.Services.AddHttpClient<VagtPlan.Web.Services.DepartmentApiClient>(client =>
     {
         client.BaseAddress = new("https+http://apiservice");
     });
@@ -41,10 +37,49 @@ builder.Services.AddScoped<VagtPlan.Web.Services.UserApiClient>(sp =>
     return new VagtPlan.Web.Services.UserApiClient(client);
 });
 
+builder.Services.AddHttpClient<VagtPlan.Web.Services.DepartmentApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    });
+
 builder.Services.AddHttpClient<VagtPlan.Web.Services.WorkTimeApiClient>(client =>
     {
         client.BaseAddress = new("https+http://apiservice");
     });
+
+// StatusService
+builder.Services.AddHttpClient<StatusService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+// WishService
+builder.Services.AddHttpClient<WishService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+// Simple user client for selecting users
+builder.Services.AddHttpClient<UserService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+builder.Services.AddHttpClient<WorkDayService>(client =>
+{
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "https+http://apiservice";
+    client.BaseAddress = new(baseUrl);
+});
+
+builder.Services.AddHttpClient<VagtPlan.Web.Services.AuthApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://apiservice");
+    });
+
+builder.Services.AddScoped<VagtPlan.Web.Services.ApiAuthState>();
 
 var app = builder.Build();
 

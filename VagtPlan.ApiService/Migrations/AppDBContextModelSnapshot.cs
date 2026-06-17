@@ -45,6 +45,45 @@ namespace ApiService.Migrations
                     b.ToTable("Departments");
                 });
 
+            modelBuilder.Entity("ApiService.Models.SpecialWish", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DayOfWeek")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("StatusId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StatusId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SpecialWishes");
+                });
+
             modelBuilder.Entity("ApiService.Models.Status", b =>
                 {
                     b.Property<int>("Id")
@@ -53,7 +92,7 @@ namespace ApiService.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Color")
+                    b.Property<string>("Colour")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -257,8 +296,8 @@ namespace ApiService.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
 
                     b.Property<TimeOnly>("EndTime")
                         .HasColumnType("time without time zone");
@@ -282,6 +321,25 @@ namespace ApiService.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Workdays");
+                });
+
+            modelBuilder.Entity("ApiService.Models.SpecialWish", b =>
+                {
+                    b.HasOne("ApiService.Models.Status", "status")
+                        .WithMany()
+                        .HasForeignKey("StatusId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApiService.Models.User", "user")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("status");
+
+                    b.Navigation("user");
                 });
 
             modelBuilder.Entity("ApiService.Models.Substitute", b =>

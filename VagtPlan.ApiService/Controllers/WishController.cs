@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace ApiService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class WishController : ControllerBase
     {
         private readonly AppDBContext _context;
@@ -26,9 +28,9 @@ namespace ApiService.Controllers
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<WishDTO>>> GetWishes()
         {
-            var users =  await _context.Wishes.ToListAsync();
+            var wishes =  await _context.Wishes.ToListAsync();
 
-            return Ok(users);
+            return Ok(wishes);
         }
 
         // GET: api/Wishes/5

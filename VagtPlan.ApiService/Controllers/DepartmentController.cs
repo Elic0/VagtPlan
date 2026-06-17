@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApiService.DBContext;
@@ -8,6 +9,7 @@ namespace ApiService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DepartmentController : ControllerBase
     {
         private readonly AppDBContext _context;
@@ -25,7 +27,7 @@ namespace ApiService.Controllers
         }
 
         [HttpGet("get/{id}")]
-        public async Task<ActionResult<Department>> GetDepartment([FromRoute] long id)
+        public async Task<ActionResult<Department>> GetDepartment([FromRoute] int id)
         {
             var department = await _context.Departments.FindAsync(id);
 
@@ -52,7 +54,7 @@ namespace ApiService.Controllers
         }
 
         [HttpPut("edit/{id}")]
-        public async Task<IActionResult> EditDepartment([FromRoute] long id, [FromBody] DepartmentDTO departmentDTO)
+        public async Task<IActionResult> EditDepartment([FromRoute] int id, [FromBody] DepartmentDTO departmentDTO)
         {
             var department = await _context.Departments.FindAsync(id);
             if (department == null)
@@ -80,7 +82,7 @@ namespace ApiService.Controllers
         }
 
         [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> DeleteDepartment([FromRoute] long id)
+        public async Task<IActionResult> DeleteDepartment([FromRoute] int id)
         {
             var department = await _context.Departments.FindAsync(id);
             if (department == null)
@@ -88,13 +90,18 @@ namespace ApiService.Controllers
                 return NotFound();
             }
 
+            var workTimes = await _context.WorkTimes
+                .Where(w => w.DepartmentId == id)
+                .ToListAsync();
+
+            _context.WorkTimes.RemoveRange(workTimes);
             _context.Departments.Remove(department);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        private bool DepartmentExists(long id)
+        private bool DepartmentExists(int id)
         {
             return _context.Departments.Any(e => e.Id == id);
         }

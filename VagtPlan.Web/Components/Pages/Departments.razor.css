@@ -1,7 +1,5 @@
 .departments-page {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 0 4rem;
+    padding: 0;
 }
 
 .page-header {
@@ -69,33 +67,6 @@
 .field-group {
     flex: 1;
     min-width: 220px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.field-group label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #475569;
-    letter-spacing: 0.02em;
-}
-
-.field-input {
-    padding: 0.75rem 1rem;
-    border: 1px solid #dde3ed;
-    border-radius: 10px;
-    font-size: 0.95rem;
-    color: #0f172a;
-    background: #fafbfc;
-    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-}
-
-.field-input:focus {
-    outline: none;
-    border-color: #3b5998;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(59, 89, 152, 0.12);
 }
 
 .btn-primary-action {
@@ -112,9 +83,9 @@
     box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
 }
 
-.btn-primary-action:hover:not(:disabled) {
-    box-shadow: 0 4px 16px rgba(30, 58, 95, 0.3);
-}
+    .btn-primary-action:hover:not(:disabled) {
+    background: linear-gradient(135deg, #284e7a 0%, #375d8e 100%);
+    }
 
 .btn-primary-action:disabled {
     opacity: 0.6;
@@ -175,6 +146,10 @@
     margin-bottom: 0.75rem;
 }
 
+.empty-icon i {
+    font-size: 2.5rem;
+}
+
 .empty-state p {
     font-weight: 600;
     color: #334155;
@@ -211,11 +186,30 @@
     color: #94a3b8;
 }
 
+.department-card-body {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.department-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2f8;
+    color: #1e3a5f;
+    border-radius: 12px;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
 .department-card-body h3 {
     font-size: 1.15rem;
     font-weight: 600;
     color: #0f172a;
-    margin: 0.15rem 0 0;
+    margin: 0;
 }
 
 .department-card-actions {
@@ -225,6 +219,9 @@
 }
 
 .btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     padding: 0.55rem 1rem;
     background: #fff;
     color: #1e3a5f;
@@ -242,6 +239,9 @@
 }
 
 .btn-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     padding: 0.55rem 0.85rem;
     background: transparent;
     color: #94a3b8;
