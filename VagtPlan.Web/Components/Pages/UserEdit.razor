@@ -1,0 +1,195 @@
+﻿@page "/users/{UserId:int}"
+@inject UserApiClient UserApi
+@inject DepartmentApiClient DepartmentApi
+@inject UserRoleApiClient UserRoleApi
+@inject NavigationManager Navigation
+@using VagtPlan.Web.Models
+@rendermode InteractiveServer
+
+<PageTitle>@(_user?.Name ?? "Bruger") - Rediger</PageTitle>
+
+<div class="edit-page">
+    <nav class="breadcrumb">
+        <a href="/users">Bruger Håndtering</a>
+        <span class="sep">/</span>
+        <span>@(_user?.Name ?? "...")</span>
+    </nav>
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Henter data...</span>
+        </div>
+    }
+    else if (_user is null)
+    {
+        <div class="alert-banner">Brugeren blev ikke funder</div>
+        <a href="/users" class="back-link">Tilbage til bruger håndtering</a>
+    }
+    else
+    {
+        <header class="page-header">
+            <div>
+                <p class="page-eyebrow">Vagtplan</p>
+                <h1>@_user.Name</h1>
+                <p class="page-subtitle">Rediger bruger</p>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert-banner" role="alert">@_error</div>
+        }
+
+        <section class="card-panel">
+            <h2>Rediger bruger</h2>
+
+            <EditForm Model="_form" OnValidSubmit="SaveUserAsync" class="create-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-row">
+                    <div class="field-group">
+                        <label for="user-name">Navn</label>
+                        <InputText id="user-name" @bind-Value="_form.Name" class="field-input" />
+                    </div>
+                    <div class="field-group">
+                        <label for="user-department">Afdeling</label>
+                        <InputSelect id="user-department" TValue="long" @bind-Value="_form.DepartmentId" class="field-input">
+                            <option value="0" disabled>Vælg afdeling</option>
+                            @foreach (var d in _departments)
+                            {
+                                <option value="@d.Id">@d.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="field-group">
+                        <label for="user-role">Rolle</label>
+                        <InputSelect id="user-role" TValue="long" @bind-Value="_form.UserRoleId" class="field-input">
+                            <option value="0" disabled>Vælg rolle</option>
+                            @foreach (var r in _userRoles)
+                            {
+                                <option value="@r.Id">@r.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="field-group">
+                        <label for="user-vacation">Vaction Dage</label>
+                        <InputNumber id="user-vacation" @bind-Value="_form.VactionDays" class="field-input" />
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary-action" disabled="@_isSaving">@(_isSaving ? "Gemmer…" : "Gem")</button>
+                    <button type="button" class="btn-secondary" @onclick="Cancel" disabled="@_isSaving">Annuller</button>
+                    <button type="button" class="btn-delete" @onclick="DeleteAsync" disabled="@_isSaving">Slet</button>
+                </div>
+            </EditForm>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int UserId { get; set; }
+
+    private UserModel? _user;
+    private DepartmentModel[] _departments = Array.Empty<DepartmentModel>();
+    private UserRoleModel[] _userRoles = Array.Empty<UserRoleModel>();
+    private UserDto _form = new UserDto
+    {
+        Name = string.Empty,
+        VactionDays = 0,
+        DepartmentId = 0,
+        UserRoleId = 0,
+        password = null
+    };
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            _departments = await DepartmentApi.GetAllAsync();
+            _userRoles = await UserRoleApi.GetAllAsync();
+            _user = await UserApi.GetByIdAsync(UserId);
+            if (_user != null)
+            {
+                _form.Name = _user.Name;
+                _form.VactionDays = _user.VactionDays;
+                _form.DepartmentId = _user.DepartmentId;
+                _form.UserRoleId = _user.UserRoleId;
+                _form.password = _user.password;
+            }
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke hente bruger. Tjek at Api'en kører";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/users");
+
+    private async Task SaveUserAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _error = "Navn må ikke være tomt.";
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserApi.UpdateAsync(UserId, _form);
+            Navigation.NavigateTo("/users");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke gemme bruger.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        var confirmed = true;
+        if (!confirmed) return;
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserApi.DeleteAsync(UserId);
+            Navigation.NavigateTo("/users");
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke slette bruger.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

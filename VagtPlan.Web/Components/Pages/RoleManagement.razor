@@ -1,0 +1,161 @@
+﻿@page "/role"
+@inject HttpClient Http
+@rendermode InteractiveServer
+@inject UserRoleApiClient UserRoleApi
+@inject NavigationManager Navigation
+
+<PageTitle>Rolle Håndtering</PageTitle>
+
+<div class="user-roles-page">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Vagtplan</p>
+            <h1>Rolle Håndtering</h1>
+            <p class="page-subtitle">Opret roller og administrer eksisterende roller.</p>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert-banner" role="alert">@_error</div>
+    }
+
+    <section class="card-panel create-panel">
+        <h2>Opret roller</h2>
+        
+        <EditForm Model="_newUserRole" OnValidSubmit="CreateUserRoleAsync" FormName="create-role" class="create-form">
+            <DataAnnotationsValidator />
+            <div class="form-row">
+                <div class="field-group">
+                    <label for="user-role-name">Navn</label>
+                    <InputText id="user-role-name" @bind-Value="_newUserRole.Name" class="field-input" placeholder="Rolle navn" />
+                </div>
+                <button type="submit" class="btn-primary-action" disabled="@_isSaving">
+                    @(_isSaving ? "Opretter…" : "Opret rolle")
+                </button>
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="card-panel list-panel">
+        <div class="panel-heading">
+            <h2>Alle Roller</h2>
+            <span class="count-badge">@_userRoles.Length</span>
+        </div>
+    </section>
+
+    @if (_isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Henter Roller...</span>
+        </div>
+    }
+    else if (_userRoles.Length == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon">◎</div>
+            <p>Ingen Roller</p>
+        </div>
+    }
+    else
+    {
+        <div class="user-role-grid">
+            @foreach (var userRole in _userRoles)
+            {
+                <article class="user-role-card">
+                    <div class="user-role-card-body">
+                        <h3>@userRole.Name</h3>
+                    </div>
+                    <div class="user-role-card-actions">
+                        <button class="btn-edit" @onclick="() => NavigateToEdit(userRole.Id)">
+                            Rediger roller
+                        </button>
+                        <button class="btn-delete" @onclick="() => DeleteUserRoleAsync(userRole.Id)"></button>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+
+@code {
+    private UserRoleModel[] _userRoles = [];
+    private UserRoleDto _newUserRole = new() { Name = string.Empty };
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserRolesAsync();
+    }
+
+    private async Task LoadUserRolesAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            _userRoles = await UserRoleApi.GetAllAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke hente roller. Tjek at Api'en kører";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateUserRoleAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newUserRole.Name))
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserRoleApi.CreateAsync(_newUserRole);
+            _newUserRole.Name = string.Empty;
+            await LoadUserRolesAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke oprette rolle";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteUserRoleAsync(int id)
+    {
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserRoleApi.DeleteAsync(id);
+            await LoadUserRolesAsync();
+        }
+        catch (Exception)
+        {
+            _error = "Kunne ikke slette rolle.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void NavigateToEdit(int id) => Navigation.NavigateTo($"/role/{id}/edit");
+}

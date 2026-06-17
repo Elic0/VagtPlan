@@ -1,3 +1,85 @@
+:root {
+    --bg: #F9F8F7;
+    --surface: #FFFFFF;
+    --border: #E8E5E2;
+    --border-strong: #D4D0CC;
+    --text-primary: #18181B;
+    --text-secondary: #6B7280;
+    --text-muted: #A1A1AA;
+    --accent: #2563EB;
+    --accent-subtle: #EFF6FF;
+    --danger: #DC2626;
+    --danger-subtle: #FEF2F2;
+    --radius: 8px;
+    --radius-lg: 12px;
+}
+
+.vp-page {
+    max-width: 800px;
+    padding: 2.5rem 2rem 4rem;
+    margin: 0 auto;
+}
+
+.vp-home {
+    padding-top: 3rem;
+}
+
+.vp-header {
+    margin-bottom: 1.75rem;
+}
+
+.vp-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 0.35rem;
+}
+
+.vp-home .vp-header h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin: 0 0 0.3rem;
+    line-height: 1.2;
+}
+
+.vp-home .vp-header p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 380px;
+    line-height: 1.5;
+}
+
+.vp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 34px;
+    padding: 0 0.85rem;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: background 0.12s;
+    white-space: nowrap;
+    font-family: inherit;
+    text-decoration: none;
+}
+
+.vp-btn-primary {
+    background: var(--text-primary);
+    color: #fff;
+}
+
+.vp-btn-primary:hover {
+    background: #27272A;
+    color: #fff;
+}
 /* ── Header shell ── */
 
 .vp-header {

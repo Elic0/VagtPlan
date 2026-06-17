@@ -34,7 +34,7 @@ namespace ApiService.Controllers
 
         // GET: api/Users/5
         [HttpGet("get/{id}")]
-        public async Task<ActionResult<UserDTO>> GetUser([FromRoute] int id)
+        public async Task<ActionResult<UserDTO>> GetUser([FromRoute] long id)
         {
             var user = await _context.Users.FindAsync(id);
 
@@ -48,7 +48,7 @@ namespace ApiService.Controllers
 
         // PUT: api/Users/5
         [HttpPut("edit/{id}")]
-        public async Task<IActionResult> EditUser([FromRoute]int id, [FromBody] UserDTO userDTO)
+        public async Task<IActionResult> EditUser([FromRoute]long id, [FromBody] UserDTO userDTO)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -86,6 +86,7 @@ namespace ApiService.Controllers
             var user = new User
             {
                 Name = userDTO.Name,
+                Password = null,
                 VactionDays = userDTO.VactionDays,
                 DepartmentId = userDTO.DepartmentId,
                 UserRoleId = userDTO.UserRoleId
@@ -98,7 +99,7 @@ namespace ApiService.Controllers
 
         // DELETE: api/Users/5
         [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> DeleteUser([FromRoute] int id)
+        public async Task<IActionResult> DeleteUser([FromRoute] long id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -112,7 +113,20 @@ namespace ApiService.Controllers
             return NoContent();
         }
 
-        private bool UserExists(int id)
+        // LOGIN: api/Users/login
+        [HttpPost("login")]
+        public async Task<ActionResult<UserDTO>> Login([FromBody] LoginDTO loginDTO)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Name == loginDTO.Name && u.Password == loginDTO.Password);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            return Ok(user);
+        }
+
+        private bool UserExists(long id)
         {
             return _context.Users.Any(e => e.Id == id);
         }
