@@ -1,6 +1,7 @@
 using ApiService.DBContext;
 using ApiService.DTOS;
 using ApiService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ public class StatusController : ControllerBase
     }
 
     // GET: api/Status
+    [Authorize]
     [HttpGet("get")]
     public async Task<ActionResult<IEnumerable<StatusDTO>>> GetStatuses()
     {
@@ -24,6 +26,7 @@ public class StatusController : ControllerBase
     }
 
     // GET: api/Status/5
+    [Authorize]
     [HttpGet("get/{id}")]
     public async Task<ActionResult<StatusDTO>> GetStatus(int id)
     {
@@ -38,6 +41,7 @@ public class StatusController : ControllerBase
     }
 
     // PUT: api/Status/5
+    [Authorize]
     [HttpPut("edit/{id}")]
     public async Task<IActionResult> EditStatus([FromRoute] int id, [FromBody] StatusDTO statusDTO)
     {
@@ -72,6 +76,7 @@ public class StatusController : ControllerBase
     }
 
     // POST: api/Status
+    [Authorize]
     [HttpPost("createStatus")]
     public async Task<ActionResult<Status>> CreateStatus(StatusDTO statusDTO)
     {
@@ -89,6 +94,7 @@ public class StatusController : ControllerBase
     }
 
     // DELETE: api/Status/5
+    [Authorize]
     [HttpDelete("delete/{id}")]
     public async Task<IActionResult> DeleteStatus(int? id)
     {

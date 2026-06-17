@@ -9,7 +9,6 @@ namespace ApiService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class DepartmentController : ControllerBase
     {
         private readonly AppDBContext _context;
@@ -19,6 +18,7 @@ namespace ApiService.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<Department>>> GetDepartments()
         {
@@ -26,6 +26,7 @@ namespace ApiService.Controllers
             return Ok(departments);
         }
 
+        [Authorize]
         [HttpGet("get/{id}")]
         public async Task<ActionResult<Department>> GetDepartment([FromRoute] int id)
         {
@@ -39,6 +40,7 @@ namespace ApiService.Controllers
             return Ok(department);
         }
 
+        [Authorize]
         [HttpPost("createDepartment")]
         public async Task<ActionResult<Department>> CreateDepartment(DepartmentDTO departmentDTO)
         {
@@ -53,6 +55,7 @@ namespace ApiService.Controllers
             return Ok(department);
         }
 
+        [Authorize]
         [HttpPut("edit/{id}")]
         public async Task<IActionResult> EditDepartment([FromRoute] int id, [FromBody] DepartmentDTO departmentDTO)
         {
@@ -81,6 +84,7 @@ namespace ApiService.Controllers
             return Ok(department);
         }
 
+        [Authorize]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteDepartment([FromRoute] int id)
         {

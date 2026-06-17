@@ -140,9 +140,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadDepartmentsAsync();
-        await LoadUserRolesAsync();
-        await LoadUsersAsync();
+            await LoadDepartmentsAsync();
+            await LoadUserRolesAsync();
+            await LoadUsersAsync();
     }
 
     private async Task LoadUsersAsync()
@@ -151,6 +151,10 @@
         {
             _isLoading = true;
             _users = await UserApi.GetAllAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
         {
