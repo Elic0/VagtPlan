@@ -10,7 +10,6 @@ namespace ApiService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class WorkTimeController : ControllerBase
     {
         private readonly AppDBContext _context;
@@ -20,6 +19,7 @@ namespace ApiService.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<WorkTime>>> GetWorkTimes()
         {
@@ -27,6 +27,7 @@ namespace ApiService.Controllers
             return Ok(workTimes);
         }
 
+        [Authorize]
         [HttpGet("get/{id}")]
         public async Task<ActionResult<WorkTime>> GetWorkTime([FromRoute] int id)
         {
@@ -40,6 +41,7 @@ namespace ApiService.Controllers
             return Ok(workTime);
         }
 
+        [Authorize]
         [HttpGet("get/byDepartment/{departmentId}")]
         public async Task<ActionResult<IEnumerable<WorkTime>>> GetWorkTimesByDepartment([FromRoute] int departmentId)
         {
@@ -52,6 +54,7 @@ namespace ApiService.Controllers
             return Ok(workTimes);
         }
 
+        [Authorize]
         [HttpPost("createWorkTime")]
         public async Task<ActionResult<WorkTime>> CreateWorkTime(WorkTimeDTO workTimeDTO)
         {
@@ -93,6 +96,7 @@ namespace ApiService.Controllers
             return Ok(workTime);
         }
 
+        [Authorize]
         [HttpPut("edit/{id}")]
         public async Task<IActionResult> EditWorkTime([FromRoute] int id, [FromBody] WorkTimeDTO workTimeDTO)
         {
@@ -143,6 +147,7 @@ namespace ApiService.Controllers
             return Ok(workTime);
         }
 
+        [Authorize]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteWorkTime([FromRoute] int id)
         {

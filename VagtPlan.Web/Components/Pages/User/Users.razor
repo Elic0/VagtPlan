@@ -33,7 +33,7 @@
                 </div>
                 <div class="field-group">
                     <label for="user-department">Afdeling</label>
-                    <InputSelect id="user-department" TValue="long" @bind-Value="_newUser.DepartmentId" class="field-input">
+                    <InputSelect id="user-department" TValue="int" @bind-Value="_newUser.DepartmentId" class="field-input">
                         <option value="0" disabled>Vælg afdeling</option>
                         @foreach (var d in _departments)
                         {
@@ -43,7 +43,7 @@
                 </div>
                 <div class="field-group">
                     <label for="user-role">Rolle</label>
-                    <InputSelect id="user-role" TValue="long" @bind-Value="_newUser.UserRoleId" class="field-input">
+                    <InputSelect id="user-role" TValue="int" @bind-Value="_newUser.UserRoleId" class="field-input">
                         <option value="0" disabled>Vælg rolle</option>
                         @foreach (var r in _userRoles)
                         {
@@ -127,9 +127,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadDepartmentsAsync();
-        await LoadUserRolesAsync();
-        await LoadUsersAsync();
+            await LoadDepartmentsAsync();
+            await LoadUserRolesAsync();
+            await LoadUsersAsync();
     }
 
     private async Task LoadUsersAsync()
@@ -138,6 +138,10 @@
         {
             _isLoading = true;
             _users = await UserApi.GetAllAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
         {

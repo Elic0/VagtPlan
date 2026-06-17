@@ -101,6 +101,10 @@
         {
             _userRoles = await UserRoleApi.GetAllAsync();
         }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login");
+        }
         catch (Exception)
         {
             _error = "Kunne ikke hente roller. Tjek at Api'en kører";

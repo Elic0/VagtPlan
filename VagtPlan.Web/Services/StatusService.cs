@@ -1,45 +1,57 @@
-﻿namespace VagtPlan.Web.Services
-{
-    using System.Net.Http.Json;
+﻿using VagtPlan.Web.Models;
+using System.Net.Http.Json;
+using System.Net.Http.Headers;
 
-    public class StatusService
+namespace VagtPlan.Web.Services
+{
+    public class StatusService(HttpClient httpClient, ApiAuthState authState)
     {
-        private readonly HttpClient _http;
         // Base path for status endpoints (relative to HttpClient.BaseAddress)
         private const string BasePath = "api/Status";
 
-        public StatusService(HttpClient http)
+        public async Task<List<StatusDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            _http = http;
+            EnsureAuthorizedRequest();
+            return await httpClient.GetFromJsonAsync<List<StatusDto>>($"{BasePath}/get", cancellationToken) ?? new List<StatusDto>();
         }
 
-        public async Task<List<StatusDto>> GetAllAsync()
+        public async Task<StatusDto?> GetAsync(int id, CancellationToken cancellationToken = default)
         {
-            return await _http.GetFromJsonAsync<List<StatusDto>>($"{BasePath}/get") ?? new List<StatusDto>();
+            EnsureAuthorizedRequest();
+            return await httpClient.GetFromJsonAsync<StatusDto>($"{BasePath}/get/{id}", cancellationToken);
         }
 
-        public async Task<StatusDto?> GetAsync(int id)
+        public async Task<StatusDto?> CreateAsync(StatusRequest request, CancellationToken cancellationToken = default)
         {
-            return await _http.GetFromJsonAsync<StatusDto>($"{BasePath}/get/{id}");
+            EnsureAuthorizedRequest();
+            var response = await httpClient.PostAsJsonAsync($"{BasePath}/createStatus", request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<StatusDto>();
         }
 
-        public async Task<StatusDto?> CreateAsync(StatusRequest request)
+        public async Task<bool> UpdateAsync(int id, StatusRequest request, CancellationToken cancellationToken = default)
         {
-            var resp = await _http.PostAsJsonAsync($"{BasePath}/createStatus", request);
-            if (!resp.IsSuccessStatusCode) return null;
-            return await resp.Content.ReadFromJsonAsync<StatusDto>();
+            EnsureAuthorizedRequest();
+            var response = await httpClient.PutAsJsonAsync($"{BasePath}/edit/{id}", request, cancellationToken);
+            return response.IsSuccessStatusCode;
         }
 
-        public async Task<bool> UpdateAsync(int id, StatusRequest request)
+        public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var resp = await _http.PutAsJsonAsync($"{BasePath}/edit/{id}", request);
-            return resp.IsSuccessStatusCode;
+            EnsureAuthorizedRequest();
+            var response = await httpClient.DeleteAsync($"{BasePath}/delete/{id}", cancellationToken);
+            return response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        private void EnsureAuthorizedRequest()
         {
-            var resp = await _http.DeleteAsync($"{BasePath}/delete/{id}");
-            return resp.IsSuccessStatusCode || resp.StatusCode == System.Net.HttpStatusCode.NoContent;
+            if (!authState.IsAuthenticated || string.IsNullOrWhiteSpace(authState.Token))
+            {
+                throw new InvalidOperationException("Du er ikke logget ind.");
+            }
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", authState.Token);
         }
     }
 

@@ -1,51 +1,64 @@
-﻿namespace VagtPlan.Web.Services
-{
-    using System.Net.Http.Json;
+﻿using VagtPlan.Web.Models;
+using System.Net.Http.Json;
+using System.Net.Http.Headers;
 
-    public class WorkDayService
+namespace VagtPlan.Web.Services
+{
+    public class WorkDayService(HttpClient httpClient, ApiAuthState authState)
     {
-        private readonly HttpClient _http;
         private const string BasePath = "api/Workdays";
 
-        public WorkDayService(HttpClient http)
+        public async Task<List<WorkDayDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            _http = http;
+            EnsureAuthorizedRequest();
+            return await httpClient.GetFromJsonAsync<List<WorkDayDto>>($"{BasePath}/get", cancellationToken) ?? new List<WorkDayDto>();
         }
 
-        public async Task<List<WorkDayDto>> GetAllAsync()
+        public async Task<WorkDayDto?> GetAsync(int id, CancellationToken cancellationToken = default)
         {
-            return await _http.GetFromJsonAsync<List<WorkDayDto>>($"{BasePath}/get") ?? new List<WorkDayDto>();
+            EnsureAuthorizedRequest();
+            return await httpClient.GetFromJsonAsync<WorkDayDto>($"{BasePath}/get/{id}", cancellationToken);
         }
 
-        public async Task<WorkDayDto?> GetAsync(int id)
+        public async Task<WorkDayDto?> CreateAsync(WorkDayRequest request, CancellationToken cancellationToken = default)
         {
-            return await _http.GetFromJsonAsync<WorkDayDto>($"{BasePath}/get/{id}");
+            EnsureAuthorizedRequest();
+            var response = await httpClient.PostAsJsonAsync($"{BasePath}/createWorkDay", request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<WorkDayDto>();
         }
 
-        public async Task<WorkDayDto?> CreateAsync(WorkDayRequest request)
+        public async Task<GenerateWorkdaysResult?> GenerateAsync(GenerateWorkdaysRequest request, CancellationToken cancellationToken = default)
         {
-            var resp = await _http.PostAsJsonAsync($"{BasePath}/createWorkDay", request);
-            if (!resp.IsSuccessStatusCode) return null;
-            return await resp.Content.ReadFromJsonAsync<WorkDayDto>();
+            EnsureAuthorizedRequest();
+            var response = await httpClient.PostAsJsonAsync($"{BasePath}/generate", request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            return await response.Content.ReadFromJsonAsync<GenerateWorkdaysResult>();
         }
 
-        public async Task<GenerateWorkdaysResult?> GenerateAsync(GenerateWorkdaysRequest request)
+        public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var resp = await _http.PostAsJsonAsync($"{BasePath}/generate", request);
-            if (!resp.IsSuccessStatusCode) return null;
-            return await resp.Content.ReadFromJsonAsync<GenerateWorkdaysResult>();
+            EnsureAuthorizedRequest();
+            var response = await httpClient.DeleteAsync($"{BasePath}/delete/{id}", cancellationToken);
+            return response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> UpdateAsync(int id, WorkDayRequest request, CancellationToken cancellationToken = default)
         {
-            var resp = await _http.DeleteAsync($"{BasePath}/delete/{id}");
-            return resp.IsSuccessStatusCode || resp.StatusCode == System.Net.HttpStatusCode.NoContent;
+            EnsureAuthorizedRequest();
+            var response = await httpClient.PutAsJsonAsync($"{BasePath}/edit/{id}", request, cancellationToken);
+            return response.IsSuccessStatusCode;
         }
 
-        public async Task<bool> UpdateAsync(int id, WorkDayRequest request)
+        private void EnsureAuthorizedRequest()
         {
-            var resp = await _http.PutAsJsonAsync($"{BasePath}/edit/{id}", request);
-            return resp.IsSuccessStatusCode;
+            if (!authState.IsAuthenticated || string.IsNullOrWhiteSpace(authState.Token))
+            {
+                throw new InvalidOperationException("Du er ikke logget ind.");
+            }
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", authState.Token);
         }
     }
 

@@ -1,27 +1,29 @@
+using VagtPlan.Web.Models;
+using System.Net.Http.Json;
+using System.Net.Http.Headers;
+
 namespace VagtPlan.Web.Services
 {
-    using System.Net.Http.Json;
 
-    public class UserService
+    public class UserService (HttpClient httpClient, ApiAuthState authState)
     {
-        private readonly HttpClient _http;
         private const string BasePath = "api/User";
 
-        public UserService(HttpClient http)
+        public async Task<List<UserRequestDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            _http = http;
+            EnsureAuthorizedRequest();
+            return await httpClient.GetFromJsonAsync<List<UserRequestDto>>($"{BasePath}/get", cancellationToken) ?? new List<UserRequestDto>();
         }
 
-        public async Task<List<UserDto>> GetAllAsync()
+        private void EnsureAuthorizedRequest()
         {
-            return await _http.GetFromJsonAsync<List<UserDto>>($"{BasePath}/get") ?? new List<UserDto>();
-        }
-    }
+            if (!authState.IsAuthenticated || string.IsNullOrWhiteSpace(authState.Token))
+            {
+                throw new InvalidOperationException("Du er ikke logget ind.");
+            }
 
-    public class UserDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int DepartmentId { get; set; }
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", authState.Token);
+        }
     }
 }

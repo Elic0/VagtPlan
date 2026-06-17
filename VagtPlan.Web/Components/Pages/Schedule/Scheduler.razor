@@ -8,6 +8,7 @@
 @inject WorkDayService WorkDayService
 @inject DepartmentApiClient DepartmentApiClient
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <h3>Scheduler</h3>
 
@@ -35,7 +36,7 @@
             else
             {
                 <div style="max-height:200px; overflow:auto; border:1px solid #eee; padding:6px; background:#fafafa;">
-                    @foreach (var u in users ?? Enumerable.Empty<UserDto>())
+                    @foreach (var u in users ?? Enumerable.Empty<UserRequestDto>())
                     {
                         var count = assignedCounts.ContainsKey(u.Id) ? assignedCounts[u.Id] : 0;
                         <div class="d-flex justify-content-between">
@@ -134,7 +135,7 @@
 </div>
 
 @code {
-    private List<UserDto>? users;
+    private List<UserRequestDto>? users;
     private List<SpecialWishDto>? wishes;
     private List<StatusDto>? statuses;
     private List<DepartmentModel>? departments;
@@ -151,10 +152,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUsers();
-        await LoadStatuses();
-        await LoadWishes();
-        await LoadDepartments();
+        try
+        {
+            await LoadUsers();
+            await LoadStatuses();
+            await LoadWishes();
+            await LoadDepartments();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login");
+        }
     }
     private async Task LoadUsers()
     {

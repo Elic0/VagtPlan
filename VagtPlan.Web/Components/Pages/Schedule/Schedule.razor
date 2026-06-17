@@ -1,10 +1,12 @@
 ﻿@page "/schedule"
 @rendermode InteractiveServer
 @using VagtPlan.Web.Services
+@using VagtPlan.Web.Models
 @inject WorkDayService WorkDayService
 @inject IJSRuntime JS
 @inject UserService UserService
 @inject StatusService StatusService
+@inject NavigationManager Navigation
 
 <h3>Schedule</h3>
 
@@ -85,7 +87,7 @@ else
 }
 
 @code {
-    private List<UserDto>? users;
+    private List<UserRequestDto>? users;
     private List<WorkDayDto>? workdays;
     private List<StatusDto>? statuses;
 
@@ -95,8 +97,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAllAsync();
-        BuildMonthDays();
+        try
+        {
+            await LoadAllAsync();
+            BuildMonthDays();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login");
+        }
     }
 
     private async Task LoadAllAsync()
@@ -113,11 +122,11 @@ else
         MonthDays = Enumerable.Range(1, daysInMonth).Select(d => DateOnly.FromDateTime(new DateTime(first.Year, first.Month, d))).ToList();
     }
 
-    private IEnumerable<UserDto> FilteredUsers
+    private IEnumerable<UserRequestDto> FilteredUsers
     {
         get
         {
-            if (users == null) return Enumerable.Empty<UserDto>();
+            if (users == null) return Enumerable.Empty<UserRequestDto>();
             if (!showOnlyWithAssignments || workdays == null) return users;
             var assignedUserIds = new HashSet<int>(workdays.Where(w => w.Date.Year == DisplayedMonth.Year && w.Date.Month == DisplayedMonth.Month).Select(w => w.UserId));
             return users.Where(u => assignedUserIds.Contains(u.Id));
@@ -302,7 +311,7 @@ else
                     <div class="mb-2">
                         <label class="form-label">User</label>
                         <select class="form-select" @bind="EditingWorkday.UserId">
-                            @foreach (var u in users ?? Enumerable.Empty<UserDto>())
+                            @foreach (var u in users ?? Enumerable.Empty<UserRequestDto>())
                             {
                                 <option value="@u.Id">@u.Name</option>
                             }

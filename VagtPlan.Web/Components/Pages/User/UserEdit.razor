@@ -55,7 +55,7 @@
                     </div>
                     <div class="field-group">
                         <label for="user-department">Afdeling</label>
-                        <InputSelect id="user-department" TValue="long" @bind-Value="_form.DepartmentId" class="field-input">
+                        <InputSelect id="user-department" TValue="int" @bind-Value="_form.DepartmentId" class="field-input">
                             <option value="0" disabled>Vælg afdeling</option>
                             @foreach (var d in _departments)
                             {
@@ -65,7 +65,7 @@
                     </div>
                     <div class="field-group">
                         <label for="user-role">Rolle</label>
-                        <InputSelect id="user-role" TValue="long" @bind-Value="_form.UserRoleId" class="field-input">
+                        <InputSelect id="user-role" TValue="int" @bind-Value="_form.UserRoleId" class="field-input">
                             <option value="0" disabled>Vælg rolle</option>
                             @foreach (var r in _userRoles)
                             {

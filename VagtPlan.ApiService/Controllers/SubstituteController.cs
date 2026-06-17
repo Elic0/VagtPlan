@@ -14,7 +14,6 @@ namespace ApiService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class SubstituteController : ControllerBase
     {
         private readonly AppDBContext _context;
@@ -25,6 +24,7 @@ namespace ApiService.Controllers
         }
 
         // GET: api/Substitute
+        [Authorize]
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<SubstituteDTO>>> GetSubstitutes()
         {
@@ -34,6 +34,7 @@ namespace ApiService.Controllers
         }
 
         // GET: api/Substitute/5
+        [Authorize]
         [HttpGet("get/{id}")]
         public async Task<ActionResult<SubstituteDTO>> GetSubstitute(int id)
         {
@@ -48,6 +49,7 @@ namespace ApiService.Controllers
         }
 
         // PUT: api/Substitute/5
+        [Authorize]
         [HttpPut("edit/{id}")]
         public async Task<IActionResult> EditSubstitute([FromRoute]int id,[FromBody] SubstituteDTO substituteDTO)
         {
@@ -81,6 +83,7 @@ namespace ApiService.Controllers
         }
 
         // POST: api/Substitute
+        [Authorize]
         [HttpPost("addSubstitute")]
         public async Task<ActionResult<SubstituteDTO>> AddSubstitute(SubstituteDTO substituteDTO)
         {
@@ -100,6 +103,7 @@ namespace ApiService.Controllers
         }
 
         // DELETE: api/Substitute/5
+        [Authorize]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteSubstitute(int id)
         {

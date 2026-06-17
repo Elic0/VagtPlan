@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ApiService.DBContext;
 using ApiService.DTOS;
 using ApiService.Models;
-using ApiService.DBContext;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -15,6 +16,7 @@ public class SpecialWishesController : ControllerBase
     }
 
     // GET: api/SpecialWish
+    [Authorize]
     [HttpGet("get")]
     public async Task<ActionResult<IEnumerable<SpecialWishDTO>>> GetSpecialWishes()
     {
@@ -24,6 +26,7 @@ public class SpecialWishesController : ControllerBase
     }
 
     // GET: api/SpecialWish/5
+    [Authorize]
     [HttpGet("get/{id}")]
     public async Task<ActionResult<SpecialWishDTO>> GetSpecialWish(int id)
     {
@@ -38,6 +41,7 @@ public class SpecialWishesController : ControllerBase
     }
 
     // PUT: api/SpecialWish/5
+    [Authorize]
     [HttpPut("edit/{id}")]
     public async Task<IActionResult> EditSpecialWish([FromRoute] int id, [FromBody] SpecialWishDTO specialWishDTO)
     {
@@ -84,6 +88,7 @@ public class SpecialWishesController : ControllerBase
     }
 
     // POST: api/SpecialWish
+    [Authorize]
     [HttpPost("createSpecialWish")]
     public async Task<ActionResult<SpecialWish>> CreateSpecialWish(SpecialWishDTO specialWishDTO)
     {
@@ -126,6 +131,7 @@ public class SpecialWishesController : ControllerBase
     }
 
     // DELETE: api/SpecialWish/5
+    [Authorize]
     [HttpDelete("delete/{id}")]
     public async Task<IActionResult> DeleteSpecialWish(int? id)
     {

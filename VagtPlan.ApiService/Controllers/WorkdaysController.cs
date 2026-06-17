@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ApiService.DBContext;
 using ApiService.DTOS;
 using ApiService.Models;
-using ApiService.DBContext;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -29,6 +30,7 @@ public class WorkdaysController : ControllerBase
     }
 
     // GET: api/Workday
+    [Authorize]
     [HttpGet("get")]
     public async Task<ActionResult<IEnumerable<WorkdayDTO>>> GetWorkdays()
     {
@@ -38,6 +40,7 @@ public class WorkdaysController : ControllerBase
     }
 
     // POST: api/Workday/generate
+    [Authorize]
     [HttpPost("generate")]
     public async Task<ActionResult<GenerateWorkdaysResult>> GenerateWorkdays(GenerateWorkdaysRequest request)
     {
@@ -255,6 +258,7 @@ public class WorkdaysController : ControllerBase
     }
 
     // GET: api/Workday/5
+    [Authorize]
     [HttpGet("get/{id}")]
     public async Task<ActionResult<WorkdayDTO>> GetWorkday(int id)
     {
@@ -269,6 +273,7 @@ public class WorkdaysController : ControllerBase
     }
 
     // PUT: api/Workday/5
+    [Authorize]
     [HttpPut("edit/{id}")]
     public async Task<IActionResult> EditWorkday([FromRoute] int id, [FromBody] WorkdayDTO workdayDTO)
     {
@@ -304,6 +309,7 @@ public class WorkdaysController : ControllerBase
     }
 
     // POST: api/Workday
+    [Authorize]
     [HttpPost("createWorkDay")]
     public async Task<ActionResult<Workday>> CreateWorkday(WorkdayDTO workdayDTO)
     {
@@ -322,6 +328,7 @@ public class WorkdaysController : ControllerBase
     }
 
     // DELETE: api/Workday/5
+    [Authorize]
     [HttpDelete("delete/{id}")]
     public async Task<IActionResult> DeleteWorkday(int? id)
     {

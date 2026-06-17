@@ -14,7 +14,6 @@ namespace ApiService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class WishController : ControllerBase
     {
         private readonly AppDBContext _context;
@@ -25,6 +24,7 @@ namespace ApiService.Controllers
         }
 
         // GET: api/Wishes
+        [Authorize]
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<WishDTO>>> GetWishes()
         {
@@ -34,6 +34,7 @@ namespace ApiService.Controllers
         }
 
         // GET: api/Wishes/5
+        [Authorize]
         [HttpGet("get/{id}")]
         public async Task<ActionResult<WishDTO>> GetWish([FromRoute]int id)
         {
@@ -48,6 +49,7 @@ namespace ApiService.Controllers
         }
 
         // PUT: api/Wishes/5
+        [Authorize]
         [HttpPut("edit/{id}")]
         public async Task<IActionResult> EditWish([FromRoute]int id,[FromBody] WishDTO wishDTO)
         {
@@ -81,6 +83,7 @@ namespace ApiService.Controllers
         }
 
         // POST: api/Wishes
+        [Authorize]
         [HttpPost("createWish")]
         public async Task<ActionResult<WishDTO>> CreateWish(WishDTO wishDTO)
         {
@@ -97,6 +100,7 @@ namespace ApiService.Controllers
         }
 
         // DELETE: api/Wishes/5
+        [Authorize]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteWish([FromRoute]int id)
         {
