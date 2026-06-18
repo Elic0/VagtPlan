@@ -15,20 +15,6 @@ public class WorkdaysController : ControllerBase
         _context = context;
     }
 
-    public class GenerateWorkdaysRequest
-    {
-        public required DateOnly StartDate { get; set; }
-        public required DateOnly EndDate { get; set; }
-        public required List<int> SelectedUserIds { get; set; }
-        public required int DepartmentId { get; set; }
-    }
-
-    public class GenerateWorkdaysResult
-    {
-        public List<WorkdayDTO> Created { get; set; } = new();
-        public Dictionary<int,int> AssignedCounts { get; set; } = new();
-    }
-
     // GET: api/Workday
     [Authorize]
     [HttpGet("get")]
@@ -71,9 +57,6 @@ public class WorkdaysController : ControllerBase
         // load worktimes for department (may be empty)
         var workTimes = await _context.WorkTimes.Where(wt => wt.DepartmentId == departmentId).ToListAsync();
 
-        var startDt = start.ToDateTime(TimeOnly.MinValue);
-        var endDt = end.ToDateTime(TimeOnly.MaxValue);
-
         // load wishes for selected users that match default status and overlap the period (or are open-ended)
         var wishes = await _context.SpecialWishes
             .Where(w => w.StatusId == defaultStatus.Id && selectedUserIds.Contains(w.UserId))
@@ -81,7 +64,7 @@ public class WorkdaysController : ControllerBase
 
         // filter wishes by date overlap and group by dayOfWeek
         var wishesLookup = wishes
-            .Where(w => (w.StartDate == null || w.StartDate <= endDt) && (w.EndDate == null || w.EndDate >= startDt))
+            .Where(w => (w.StartDate == null || w.StartDate <= end) && (w.EndDate == null || w.EndDate >= start))
             .GroupBy(w => w.DayOfWeek)
             .ToDictionary(g => g.Key, g => g.Select(x => x.UserId).Distinct().ToList(), StringComparer.OrdinalIgnoreCase);
 
@@ -100,7 +83,7 @@ public class WorkdaysController : ControllerBase
                 var st = allStatuses.FirstOrDefault(s => s.Id == w.StatusId);
                 if (st == null) return false;
                 if (st.IsAvailable) return false;
-                return (w.StartDate == null || w.StartDate <= endDt) && (w.EndDate == null || w.EndDate >= startDt);
+                return (w.StartDate == null || w.StartDate <= end) && (w.EndDate == null || w.EndDate >= start);
             })
             .ToList();
 
@@ -134,8 +117,8 @@ public class WorkdaysController : ControllerBase
             {
                 foreach (var wish in unavailList)
                 {
-                    var wishStartOk = wish.StartDate == null || wish.StartDate <= d.ToDateTime(TimeOnly.MaxValue);
-                    var wishEndOk = wish.EndDate == null || wish.EndDate >= d.ToDateTime(TimeOnly.MinValue);
+                    var wishStartOk = wish.StartDate == null || wish.StartDate <= d;
+                    var wishEndOk = wish.EndDate == null || wish.EndDate >= d;
                     if (!wishStartOk || !wishEndOk) continue;
                     if (!selectedUserIds.Contains(wish.UserId)) continue;
                     unavailableUsersForDate.Add(wish.UserId);
@@ -166,8 +149,8 @@ public class WorkdaysController : ControllerBase
                     // skip if candidate has an unavailable wish for this weekday covering this date
                     if (unavailableLookup.TryGetValue(dayName, out var ulist) 
                         && ulist.Any(w => w.UserId == candidate 
-                        && (w.StartDate == null || w.StartDate <= d.ToDateTime(TimeOnly.MaxValue)) 
-                        && (w.EndDate == null || w.EndDate >= d.ToDateTime(TimeOnly.MinValue))))
+                        && (w.StartDate == null || w.StartDate <= d) 
+                        && (w.EndDate == null || w.EndDate >= d)))
                         continue;
 
                     assigned = new Workday
