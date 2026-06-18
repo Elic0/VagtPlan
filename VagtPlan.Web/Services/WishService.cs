@@ -58,8 +58,8 @@ namespace VagtPlan.Web.Services
     public class SpecialWishDto
     {
         public int Id { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
         public string DayOfWeek { get; set; } = string.Empty;
         public int StatusId { get; set; }
         public int UserId { get; set; }
@@ -67,8 +67,8 @@ namespace VagtPlan.Web.Services
 
     public class SpecialWishRequest
     {
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
         public string DayOfWeek { get; set; } = string.Empty;
         public int StatusId { get; set; }
         public int UserId { get; set; }

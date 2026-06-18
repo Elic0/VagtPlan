@@ -60,8 +60,24 @@ public class SpecialWishesController : ControllerBase
         }
         else
         {
-            specialWish.StartDate = specialWishDTO.StartDate?.ToUniversalTime();
-            specialWish.EndDate = specialWishDTO.EndDate?.ToUniversalTime();
+            // Check for overlaps with other wishes for the same user/day/status
+            var startDate = specialWishDTO.StartDate;
+            var endDate = specialWishDTO.EndDate;
+
+            var conflicting = await _context.SpecialWishes
+                .Where(sw => sw.UserId == specialWishDTO.UserId && sw.DayOfWeek == specialWishDTO.DayOfWeek && sw.StatusId == specialWishDTO.StatusId && sw.Id != id)
+                .ToListAsync();
+
+            foreach (var c in conflicting)
+            {
+                if ((c.StartDate == null && c.EndDate == null) || DateRangesOverlap(c.StartDate, c.EndDate, startDate, endDate))
+                {
+                    return BadRequest("A conflicting special wish already exists for this user, day and status.");
+                }
+            }
+
+            specialWish.StartDate = startDate;
+            specialWish.EndDate = endDate;
         }
 
         specialWish.DayOfWeek = specialWishDTO.DayOfWeek;
@@ -95,13 +111,13 @@ public class SpecialWishesController : ControllerBase
         // If status is default, do not set dates (leave null)
         var status = await _context.Statuses.FindAsync(specialWishDTO.StatusId);
 
-        DateTime? start = null;
-        DateTime? end = null;
+        DateOnly? start = null;
+        DateOnly? end = null;
 
         if (status == null || !status.Default)
         {
-            start = specialWishDTO.StartDate?.ToUniversalTime();
-            end = specialWishDTO.EndDate?.ToUniversalTime();
+            start = specialWishDTO.StartDate;
+            end = specialWishDTO.EndDate;
         }
         // If status is default, overwrite (remove) any existing wishes for this user/day
         if (status != null && status.Default)
@@ -113,6 +129,21 @@ public class SpecialWishesController : ControllerBase
             if (existing.Any())
             {
                 _context.SpecialWishes.RemoveRange(existing);
+            }
+        }
+        else
+        {
+            // For non-default statuses ensure there is no overlapping wish with same user/day/status
+            var existing = await _context.SpecialWishes
+                .Where(sw => sw.UserId == specialWishDTO.UserId && sw.DayOfWeek == specialWishDTO.DayOfWeek && sw.StatusId == specialWishDTO.StatusId)
+                .ToListAsync();
+
+            foreach (var e in existing)
+            {
+                if ((e.StartDate == null && e.EndDate == null) || DateRangesOverlap(e.StartDate, e.EndDate, start, end))
+                {
+                    return BadRequest("A conflicting special wish already exists for this user, day and status.");
+                }
             }
         }
 
@@ -150,5 +181,14 @@ public class SpecialWishesController : ControllerBase
     private bool SpecialWishExists(int? id)
     {
         return _context.SpecialWishes.Any(e => e.Id == id);
+    }
+
+    private static bool DateRangesOverlap(DateOnly? aStart, DateOnly? aEnd, DateOnly? bStart, DateOnly? bEnd)
+    {
+        // If any range is open (missing start or end) we cannot reliably compare here; treat as non-overlapping
+        if (!aStart.HasValue || !aEnd.HasValue || !bStart.HasValue || !bEnd.HasValue)
+            return false;
+
+        return aStart.Value <= bEnd.Value && bStart.Value <= aEnd.Value;
     }
 }
