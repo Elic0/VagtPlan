@@ -1,0 +1,92 @@
+@using System.Globalization
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="vp-date-field @(Disabled ? "vp-date-field--disabled" : null)">
+    <input @ref="_input"
+           id="@Id"
+           type="text"
+           class="@CssClass vp-date-input"
+           placeholder="dd/mm/åååå"
+           autocomplete="off" />
+    <span class="vp-date-field__icon" aria-hidden="true"><i class="bi bi-calendar3"></i></span>
+</div>
+
+@code {
+    [Parameter] public DateTime? Value { get; set; }
+    [Parameter] public EventCallback<DateTime?> ValueChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+
+    private ElementReference _input;
+    private DotNetObjectReference<DanishDateInput>? _dotnetRef;
+    private bool _initialized;
+    private bool _lastDisabled;
+    private DateTime? _lastSyncedValue;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _initialized)
+        {
+            return;
+        }
+
+        _dotnetRef = DotNetObjectReference.Create(this);
+        var initialValue = Value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        await JS.InvokeVoidAsync("vagtPlanDateInput.init", _input, _dotnetRef, initialValue, Disabled);
+        _initialized = true;
+        _lastDisabled = Disabled;
+        _lastSyncedValue = Value;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!_initialized)
+        {
+            return;
+        }
+
+        if (Disabled != _lastDisabled)
+        {
+            await JS.InvokeVoidAsync("vagtPlanDateInput.setDisabled", _input, Disabled);
+            _lastDisabled = Disabled;
+        }
+
+        if (Value != _lastSyncedValue)
+        {
+            var iso = Value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            await JS.InvokeVoidAsync("vagtPlanDateInput.setDate", _input, iso);
+            _lastSyncedValue = Value;
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnDateSelected(string isoDate)
+    {
+        if (DateTime.TryParseExact(isoDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        {
+            Value = date.Date;
+            _lastSyncedValue = Value;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnDateCleared()
+    {
+        Value = null;
+        _lastSyncedValue = null;
+        await ValueChanged.InvokeAsync(null);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_initialized)
+        {
+            await JS.InvokeVoidAsync("vagtPlanDateInput.destroy", _input);
+        }
+
+        _dotnetRef?.Dispose();
+    }
+}

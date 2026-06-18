@@ -1,8 +1,13 @@
+using System.Globalization;
 using VagtPlan.Web;
 using VagtPlan.Web.Components;
 using VagtPlan.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var danishCulture = CultureInfo.GetCultureInfo("da-DK");
+CultureInfo.DefaultThreadCurrentCulture = danishCulture;
+CultureInfo.DefaultThreadCurrentUICulture = danishCulture;
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();

@@ -82,11 +82,11 @@
                 <div class="row g-2 mb-2">
                     <div class="col-md-6">
                         <label class="form-label">Periode start</label>
-                        <input type="date" class="form-control" @bind="model.StartDate" />
+                        <DanishDateInput @bind-Value="model.StartDate" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Periode slut</label>
-                        <input type="date" class="form-control" @bind="model.EndDate" />
+                        <DanishDateInput @bind-Value="model.EndDate" />
                     </div>
                 </div>
 
@@ -118,7 +118,7 @@
                 </div>
 
                 <div>
-                    <button class="btn btn-primary" @onclick="GenerateAsync">Generer</button>
+                    <button type="button" class="btn-primary-action" @onclick="GenerateAsync">Generer</button>
                 </div>
         </section>
 
@@ -146,7 +146,7 @@
                                 <div class="department-card-info">
                                     <h3>@GetUserName(w.UserId)</h3>
                                     <div class="vp-record-meta">
-                                        <span class="vp-pill">Dato: @w.Date.ToString("dd-MM-yyyy")</span>
+                                        <span class="vp-pill">Dato: @DateDisplayHelper.Format(w.Date)</span>
                                         <span class="vp-pill">Start: @w.StartTime.ToString("HH\\:mm")</span>
                                         <span class="vp-pill">Slut: @w.EndTime.ToString("HH\\:mm")</span>
                                     </div>

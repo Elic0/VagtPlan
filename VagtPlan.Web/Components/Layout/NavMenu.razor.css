@@ -36,7 +36,6 @@
     padding: 0 clamp(1.25rem, 3.5vw, 3rem);
 }
 
-/* Symmetrical 3-zone grid: brand | nav | actions */
 
 .vp-header-grid {
     display: grid;
@@ -47,7 +46,6 @@
     height: 76px;
 }
 
-/* ── Brand (left zone) ── */
 
 .vp-brand {
     grid-column: 1;
@@ -108,7 +106,6 @@
     white-space: nowrap;
 }
 
-/* ── Center nav ── */
 
 .vp-nav-shell {
     grid-column: 2;
@@ -172,7 +169,6 @@
     opacity: 1;
 }
 
-/* ── Right zone (logout + mobile menu) ── */
 
 .vp-header-actions {
     grid-column: 3;

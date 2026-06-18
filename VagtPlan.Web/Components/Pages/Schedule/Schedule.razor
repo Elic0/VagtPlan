@@ -48,7 +48,7 @@
 }
 else
 {
-    <section class="card-panel list-panel">
+    <section class="card-panel list-panel schedule-list-panel">
         <div class="panel-heading">
             <h2>Månedsoversigt</h2>
             <span class="count-badge">@FilteredUsers.Count()</span>
@@ -81,7 +81,7 @@ else
                         @foreach (var u in FilteredUsers)
                         {
                             <tr>
-                                <td>@u.Name</td>
+                                <td title="@u.Name">@u.Name</td>
                                 @foreach (var d in MonthDays)
                                 {
                                     var w = GetWorkdayFor(u.Id, d);
@@ -254,9 +254,16 @@ else
         get => EditingWorkday != null ? EditingWorkday.EndTime.ToString("hh\\:mm") : string.Empty;
     }
 
-    private string BindDate
+    private DateTime? EditDate
     {
-        get => EditingWorkday != null ? EditingWorkday.Date.ToDateTime(new TimeOnly()).ToString("yyyy-MM-dd") : string.Empty;
+        get => EditingWorkday?.Date.ToDateTime(TimeOnly.MinValue);
+        set
+        {
+            if (EditingWorkday != null && value.HasValue)
+            {
+                EditingWorkday.Date = DateOnly.FromDateTime(value.Value.Date);
+            }
+        }
     }
 
     private void OnStartTimeInput(ChangeEventArgs e)
@@ -271,13 +278,6 @@ else
         if (EditingWorkday == null) return;
         var val = e?.Value?.ToString();
         if (TimeOnly.TryParse(val, out var t)) EditingWorkday.EndTime = t;
-    }
-
-    private void OnDateInput(ChangeEventArgs e)
-    {
-        if (EditingWorkday == null) return;
-        var val = e?.Value?.ToString();
-        if (DateTime.TryParse(val, out var dt)) EditingWorkday.Date = DateOnly.FromDateTime(dt.Date);
     }
 
     // Edit modal state
@@ -339,7 +339,7 @@ else
     private void DeleteEditAsync()
     {
         if (EditingWorkday == null) return;
-        _deleteConfirmMessage = $"Er du sikker på, at du vil slette arbejdsdagen for {users?.FirstOrDefault(u => u.Id == EditingWorkday.UserId)?.Name ?? "brugeren"} den {EditingWorkday.Date:dd-MM-yyyy}?";
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette arbejdsdagen for {users?.FirstOrDefault(u => u.Id == EditingWorkday.UserId)?.Name ?? "brugeren"} den {DateDisplayHelper.Format(EditingWorkday.Date)}?";
         _showDeleteConfirm = true;
     }
 
@@ -448,7 +448,7 @@ else
 
                     <div class="mb-2">
                         <label class="form-label">Dato</label>
-                        <input class="form-control" type="date" value="@BindDate" @onchange="OnDateInput" />
+                        <DanishDateInput @bind-Value="EditDate" />
                     </div>
                 </div>
                 <div class="modal-footer">

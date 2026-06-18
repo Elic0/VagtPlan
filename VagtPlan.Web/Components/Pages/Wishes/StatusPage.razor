@@ -23,7 +23,7 @@
 
     <section class="card-panel create-panel">
         <h2>Opret status</h2>
-        <button type="button" class="vp-btn-edit create-action-toggle" @onclick="() => showCreate = !showCreate">
+        <button type="button" class="@(showCreate ? "btn-secondary" : "btn-primary-action") create-action-toggle" @onclick="() => showCreate = !showCreate">
             @((showCreate) ? "Annuller" : "Ny status")
         </button>
 
@@ -79,7 +79,7 @@
             </div>
             <div class="vp-row-actions">
                 <button class="btn-primary-action" @onclick="UpdateStatusAsync">Gem</button>
-                <button class="vp-btn-edit" @onclick="() => editingStatus = null">Annuller</button>
+                <button class="btn-secondary" @onclick="() => editingStatus = null">Annuller</button>
             </div>
         </section>
     }

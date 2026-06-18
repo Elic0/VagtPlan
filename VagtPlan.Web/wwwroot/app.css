@@ -220,19 +220,56 @@ a {
 
 .btn-primary-action,
 .login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: none;
-    border-radius: 11px;
-    padding: 0.8rem 1rem;
-    font-size: 0.95rem;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #fff;
     background: linear-gradient(135deg, #1e3a5f 0%, #2d4a73 100%);
+    box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
     cursor: pointer;
+    white-space: nowrap;
+    transition: box-shadow 0.15s, opacity 0.15s;
 }
 
 .btn-primary-action:hover:not(:disabled),
 .login-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #284e7a 0%, #375d8e 100%);
+    box-shadow: 0 4px 16px rgba(30, 58, 95, 0.3);
+}
+
+.btn-primary-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.25rem;
+    background: #fff;
+    color: #1e3a5f;
+    border: 1px solid #c8d4e4;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #f0f4fa;
+    border-color: #1e3a5f;
+}
+
+.btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 
@@ -482,6 +519,11 @@ h1:focus {
     margin: -0.35rem 0 1.25rem;
 }
 
+.create-panel-actions {
+    margin-top: 1.25rem;
+    padding-top: 0.25rem;
+}
+
 .panel-heading {
     display: flex;
     align-items: center;
@@ -637,6 +679,52 @@ h1:focus {
     cursor: not-allowed;
 }
 
+.wish-user-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.wish-user-group-header {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.wish-user-group-header:focus-visible {
+    outline: 2px solid #1e3a5f;
+    outline-offset: 2px;
+}
+
+.wish-user-group-count {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.wish-user-group-chevron {
+    color: #94a3b8;
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.wish-user-group.is-expanded .wish-user-group-chevron {
+    transform: rotate(180deg);
+}
+
+.wish-user-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid #e8edf4;
+    margin-left: 1.5rem;
+}
+
+.wish-item-card {
+    background: #fff;
+}
+
 @media (max-width: 640px) {
     .department-card {
         flex-direction: column;
@@ -652,9 +740,9 @@ h1:focus {
     }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1024px) {
     .app-content:has(.page-wide) {
-        max-width: min(1680px, calc(100vw - 3rem));
+        max-width: min(1720px, calc(100vw - 1.5rem));
     }
 }
 
@@ -681,6 +769,12 @@ h1:focus {
 .vp-schedule-table-wrap {
     overflow-x: auto;
     max-width: 100%;
+    min-width: 0;
+}
+
+.page-wide .schedule-list-panel {
+    margin-inline: -0.75rem;
+    padding-inline: 1.125rem;
 }
 
 .vp-schedule-table {
@@ -692,13 +786,18 @@ h1:focus {
 .vp-schedule-table th:first-child,
 .vp-schedule-table td:first-child {
     width: 150px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .vp-schedule-table th:not(:first-child),
 .vp-schedule-table td:not(:first-child) {
     text-align: center;
     vertical-align: middle;
-    padding: 4px 2px;
+    padding: 3px 1px;
+    overflow: hidden;
 }
 
 .vp-schedule-table .schedule-day-num {
@@ -709,6 +808,9 @@ h1:focus {
 .vp-schedule-table .schedule-day-name {
     font-size: 0.7rem;
     color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {

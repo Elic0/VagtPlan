@@ -48,11 +48,11 @@
                 <div class="row g-2 mb-2">
                     <div class="col-md-6">
                         <label class="form-label">Startdato</label>
-                        <input type="date" class="form-control" @bind="createModel.StartDate" disabled="@IsStatusDefault(createModel.StatusId)" />
+                        <DanishDateInput @bind-Value="createModel.StartDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Slutdato</label>
-                        <input type="date" class="form-control" @bind="createModel.EndDate" disabled="@IsStatusDefault(createModel.StatusId)" />
+                        <DanishDateInput @bind-Value="createModel.EndDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
                     </div>
                 </div>
 
@@ -83,8 +83,8 @@
                     </select>
                 </div>
 
-                <div>
-                    <button class="btn btn-success" @onclick="CreateWishesAsync">Opret ønsker</button>
+                <div class="create-panel-actions">
+                    <button type="button" class="btn-primary-action" @onclick="CreateWishesAsync">Opret ønsker</button>
                 </div>
             </section>
 
@@ -111,27 +111,54 @@
                 else
                 {
                     <div class="department-grid">
-                        @foreach (var w in wishes)
+                        @foreach (var group in WishGroups)
                         {
-                            <article class="department-card">
-                                <div class="department-card-body">
-                                    <div class="department-icon"><i class="bi bi-stars"></i></div>
-                                    <div class="department-card-info">
-                                        <h3>@(GetUserName(w.UserId) ?? "Ukendt bruger")</h3>
-                                        <div class="vp-record-meta">
-                                            <span class="vp-pill">@GetDanishDayName(w.DayOfWeek)</span>
-                                            <span class="vp-pill">Start: @(w.StartDate.HasValue ? w.StartDate.Value.ToLocalTime().ToShortDateString() : "-")</span>
-                                            <span class="vp-pill">Slut: @(w.EndDate.HasValue ? w.EndDate.Value.ToLocalTime().ToShortDateString() : "-")</span>
-                                            <span class="vp-pill">Status: @(GetStatusName(w.StatusId) ?? "-")</span>
+                            var userId = group.Key;
+                            var userName = GetUserName(userId) ?? "Ukendt bruger";
+                            var isExpanded = expandedUserIds.Contains(userId);
+
+                            <article class="wish-user-group @(isExpanded ? "is-expanded" : "")">
+                                <button type="button"
+                                        class="wish-user-group-header department-card"
+                                        aria-expanded="@isExpanded"
+                                        @onclick="() => ToggleUserGroup(userId)">
+                                    <div class="department-card-body">
+                                        <div class="department-icon"><i class="bi bi-person"></i></div>
+                                        <div class="department-card-info">
+                                            <h3>@userName</h3>
+                                            <span class="wish-user-group-count">@group.Count() @(group.Count() == 1 ? "ønske" : "ønsker")</span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="department-card-actions">
-                                    <button class="btn-delete" @onclick="() => DeleteWishAsync(w)">
-                                        <i class="bi bi-trash3"></i>
-                                        Slet
-                                    </button>
-                                </div>
+                                    <i class="bi bi-chevron-down wish-user-group-chevron" aria-hidden="true"></i>
+                                </button>
+
+                                @if (isExpanded)
+                                {
+                                    <div class="wish-user-group-items">
+                                        @foreach (var w in group.OrderBy(w => w.DayOfWeek))
+                                        {
+                                            <article class="department-card wish-item-card">
+                                                <div class="department-card-body">
+                                                    <div class="department-icon"><i class="bi bi-stars"></i></div>
+                                                    <div class="department-card-info">
+                                                        <div class="vp-record-meta">
+                                                            <span class="vp-pill">@GetDanishDayName(w.DayOfWeek)</span>
+                                                            <span class="vp-pill">Start: @(w.StartDate.HasValue ? DateDisplayHelper.Format(w.StartDate.Value.ToLocalTime()) : "-")</span>
+                                                            <span class="vp-pill">Slut: @(w.EndDate.HasValue ? DateDisplayHelper.Format(w.EndDate.Value.ToLocalTime()) : "-")</span>
+                                                            <span class="vp-pill">Status: @(GetStatusName(w.StatusId) ?? "-")</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="department-card-actions">
+                                                    <button class="btn-delete" @onclick="() => DeleteWishAsync(w)" @onclick:stopPropagation="true">
+                                                        <i class="bi bi-trash3"></i>
+                                                        Slet
+                                                    </button>
+                                                </div>
+                                            </article>
+                                        }
+                                    </div>
+                                }
                             </article>
                         }
                     </div>
@@ -173,6 +200,12 @@
     private string _deleteConfirmMessage = string.Empty;
 
     private HashSet<int> selectedUserIds = new();
+    private HashSet<int> expandedUserIds = new();
+
+    private IEnumerable<IGrouping<int, SpecialWishDto>> WishGroups =>
+        wishes?.GroupBy(w => w.UserId)
+            .OrderBy(g => GetUserName(g.Key) ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+        ?? Enumerable.Empty<IGrouping<int, SpecialWishDto>>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -196,6 +229,12 @@
     {
         if (selectedUserIds.Contains(id)) selectedUserIds.Remove(id);
         else selectedUserIds.Add(id);
+    }
+
+    private void ToggleUserGroup(int userId)
+    {
+        if (expandedUserIds.Contains(userId)) expandedUserIds.Remove(userId);
+        else expandedUserIds.Add(userId);
     }
 
     private bool IsStatusDefault(int statusId)
