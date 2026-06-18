@@ -48,11 +48,11 @@
                 <div class="row g-2 mb-2">
                     <div class="col-md-6">
                         <label class="form-label">Startdato</label>
-                        <DanishDateInput @bind-Value="createModel.StartDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
+                        <DanishDateInput @bind-Value="CreateStartDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Slutdato</label>
-                        <DanishDateInput @bind-Value="createModel.EndDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
+                        <DanishDateInput @bind-Value="CreateEndDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
                     </div>
                 </div>
 
@@ -143,8 +143,8 @@
                                                     <div class="department-card-info">
                                                         <div class="vp-record-meta">
                                                             <span class="vp-pill">@GetDanishDayName(w.DayOfWeek)</span>
-                                                            <span class="vp-pill">Start: @(w.StartDate.HasValue ? DateDisplayHelper.Format(w.StartDate.Value.ToLocalTime()) : "-")</span>
-                                                            <span class="vp-pill">Slut: @(w.EndDate.HasValue ? DateDisplayHelper.Format(w.EndDate.Value.ToLocalTime()) : "-")</span>
+                                                            <span class="vp-pill">Start: @DateDisplayHelper.Format(w.StartDate)</span>
+                                                            <span class="vp-pill">Slut: @DateDisplayHelper.Format(w.EndDate)</span>
                                                             <span class="vp-pill">Status: @(GetStatusName(w.StatusId) ?? "-")</span>
                                                         </div>
                                                     </div>
@@ -237,6 +237,18 @@
         else expandedUserIds.Add(userId);
     }
 
+    private DateTime? CreateStartDate
+    {
+        get => createModel.StartDate?.ToDateTime(TimeOnly.MinValue);
+        set => createModel.StartDate = value.HasValue ? DateOnly.FromDateTime(value.Value.Date) : null;
+    }
+
+    private DateTime? CreateEndDate
+    {
+        get => createModel.EndDate?.ToDateTime(TimeOnly.MinValue);
+        set => createModel.EndDate = value.HasValue ? DateOnly.FromDateTime(value.Value.Date) : null;
+    }
+
     private bool IsStatusDefault(int statusId)
     {
         var s = statuses?.FirstOrDefault(x => x.Id == statusId);
@@ -293,8 +305,40 @@
             }
         }
 
-        var start = createModel.StartDate.HasValue ? createModel.StartDate.Value.Date : DateTime.MinValue;
-        var end = createModel.EndDate.HasValue ? createModel.EndDate.Value.Date : DateTime.MinValue;
+        var start = createModel.StartDate;
+        var end = createModel.EndDate;
+
+        if (!statusIsDefault)
+        {
+            var conflictMessages = new List<string>();
+
+            foreach (var uid in selectedUserIds)
+            {
+                foreach (var day in selectedDays)
+                {
+                    var existing = wishes?
+                        .Where(w => w.UserId == uid && w.DayOfWeek == day && w.StatusId == createModel.StatusId)
+                        .ToList() ?? [];
+
+                    foreach (var e in existing)
+                    {
+                        if ((e.StartDate == null && e.EndDate == null) || DateRangesOverlap(e.StartDate, e.EndDate, start, end))
+                        {
+                            var userName = GetUserName(uid) ?? uid.ToString();
+                            var statusName = GetStatusName(createModel.StatusId) ?? createModel.StatusId.ToString();
+                            conflictMessages.Add($"Ønske for {userName} på {GetDanishDayName(day)} med status '{statusName}' overlapper med et eksisterende ønske.");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (conflictMessages.Count > 0)
+            {
+                errorMessage = string.Join(" ", conflictMessages.Distinct());
+                return;
+            }
+        }
 
         foreach (var uid in selectedUserIds)
         {
@@ -302,9 +346,8 @@
             {
                 var req = new SpecialWishRequest
                 {
-                    // If selected status is default, send nulls; otherwise send UTC dates
-                    StartDate = statusIsDefault ? null : start.ToUniversalTime(),
-                    EndDate = statusIsDefault ? null : end.ToUniversalTime(),
+                    StartDate = statusIsDefault ? null : start,
+                    EndDate = statusIsDefault ? null : end,
                     DayOfWeek = day,
                     UserId = uid,
                     StatusId = createModel.StatusId
@@ -382,10 +425,20 @@
         return false;
     }
 
+    private static bool DateRangesOverlap(DateOnly? aStart, DateOnly? aEnd, DateOnly? bStart, DateOnly? bEnd)
+    {
+        if (!aStart.HasValue || !aEnd.HasValue || !bStart.HasValue || !bEnd.HasValue)
+        {
+            return false;
+        }
+
+        return aStart.Value <= bEnd.Value && bStart.Value <= aEnd.Value;
+    }
+
     private class CreateModel
     {
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
         public int StatusId { get; set; }
     }
 }

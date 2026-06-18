@@ -14,6 +14,8 @@ public static class DateDisplayHelper
 
     public static string Format(DateTime? date) => date.HasValue ? Format(date.Value) : "-";
 
+    public static string Format(DateOnly? date) => date.HasValue ? Format(date.Value) : "-";
+
     public static string Format(DateTimeOffset date) => Format(date.LocalDateTime);
 
     public static bool TryParse(string? input, out DateTime date) =>
