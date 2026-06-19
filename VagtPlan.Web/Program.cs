@@ -97,8 +97,6 @@ app.UseAntiforgery();
 
 app.UseOutputCache();
 
-app.UseStaticFiles();
-
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
