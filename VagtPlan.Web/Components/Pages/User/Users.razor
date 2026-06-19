@@ -1,0 +1,346 @@
+﻿@page "/users"
+@rendermode InteractiveServer
+@inject UserApiClient UserApi
+@inject DepartmentApiClient DepartmentApi
+@inject UserRoleApiClient UserRoleApi
+@inject NavigationManager Navigation
+@inject ApiAuthState AuthState
+@using VagtPlan.Web.Models
+@using System.Linq
+
+<PageTitle>Brugere — VagtPlan</PageTitle>
+
+<div class="users-page">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Vagtplan</p>
+            <h1>Brugerhåndtering</h1>
+            <p class="page-subtitle">Opret brugere og administrer eksisterende brugere.</p>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert-banner" role="alert">@_error</div>
+    }
+
+    <section class="card-panel create-panel">
+        <h2>Opret bruger</h2>
+
+        <EditForm Model="_newUser" OnValidSubmit="CreateUserAsync" FormName="create-user" class="create-form">
+            <DataAnnotationsValidator />
+            <div class="form-row">
+                <div class="field-group">
+                    <label for="user-name">Navn</label>
+                    <InputText id="user-name" @bind-Value="_newUser.Name" class="field-input" placeholder="Bruger navn" />
+                </div>
+                <div class="field-group">
+                    <label for="user-department">Afdeling</label>
+                    <InputSelect id="user-department" TValue="int" @bind-Value="_newUser.DepartmentId" class="field-input">
+                        <option value="0" disabled>Vælg afdeling</option>
+                        @foreach (var d in _departments)
+                        {
+                            <option value="@d.Id">@d.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="field-group">
+                    <label for="user-role">Rolle</label>
+                    <InputSelect id="user-role" TValue="int" @bind-Value="_newUser.UserRoleId" class="field-input">
+                        <option value="0" disabled>Vælg rolle</option>
+                        @foreach (var r in _userRoles)
+                        {
+                            <option value="@r.Id">@r.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="field-group">
+                    <label for="user-vacation">Feriedage</label>
+                    <InputNumber id="user-vacation" @bind-Value="_newUser.VactionDays" class="field-input" placeholder="Antal feriedage" />
+                </div>
+                <button type="submit" class="btn-primary-action" disabled="@_isSaving">
+                    @(_isSaving ? "Opretter…" : "Opret bruger")
+                </button>
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="card-panel list-panel">
+        <div class="panel-heading">
+            <h2>Alle brugere</h2>
+            <span class="count-badge">@_users.Length</span>
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <span>Henter brugere…</span>
+            </div>
+        }
+        else if (_users.Length == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-people"></i></div>
+                <p>Ingen brugere endnu</p>
+                <span>Opret din første bruger ovenfor.</span>
+            </div>
+        }
+        else
+        {
+            <div class="user-grid">
+                @foreach (var user in _users)
+                {
+                    <article class="user-card">
+                        <div class="user-card-body">
+                            <h3>@user.Name</h3>
+                            <p>Afdeling: @GetDepartmentName(user.DepartmentId)</p>
+                            <p>Rolle: @GetUserRoleName(user.UserRoleId)</p>
+                            <p>Feriedage: @user.VactionDays</p>
+                        </div>
+                        <div class="user-card-actions">
+                            <button class="btn-edit" @onclick="() => NavigateToEdit(user.Id)">
+                                <i class="bi bi-pencil"></i>
+                                Rediger
+                            </button>
+                            <button class="btn-delete" @onclick="() => DeleteUserAsync(user.Id)">
+                                <i class="bi bi-trash3"></i>
+                                Slet
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+</div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet bruger?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet bruger"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteUserAsync"
+    OnCancel="CancelDeleteUser" />
+
+@code {
+    private UserModel[] _users = Array.Empty<UserModel>();
+    private DepartmentModel[] _departments = Array.Empty<DepartmentModel>();
+    private UserRoleModel[] _userRoles = Array.Empty<UserRoleModel>();
+    private UserDto _newUser = new UserDto {
+        Name = string.Empty,
+        VactionDays = 0,
+        DepartmentId = 0,
+        UserRoleId = 0,
+        password = null
+    };
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+    private string? _error;
+    private bool _showDeleteConfirm;
+    private int? _pendingDeleteUserId;
+    private string _deleteConfirmMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+            await LoadDepartmentsAsync();
+            await LoadUserRolesAsync();
+            await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _users = await UserApi.GetAllAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            if (!HandleUnauthorized(ex))
+            {
+                _error = $"Fejl ved indlæsning af brugere: {ex.Message}";
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        try
+        {
+            _departments = await DepartmentApi.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            if (!HandleUnauthorized(ex))
+            {
+                // non-fatal: keep departments empty and show generic error
+                _error ??= "Kunne ikke hente afdelinger.";
+            }
+        }
+    }
+
+    private async Task LoadUserRolesAsync()
+    {
+        try
+        {
+            _userRoles = await UserRoleApi.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            if (!HandleUnauthorized(ex))
+            {
+                _error ??= "Kunne ikke hente roller.";
+            }
+        }
+    }
+
+    private string GetDepartmentName(int id)
+    {
+        if (id == 0) return "-";
+        var d = _departments.FirstOrDefault(x => x.Id == id);
+        return d?.Name ?? id.ToString();
+    }
+
+    private string GetUserRoleName(int id)
+    {
+        if (id == 0) return "-";
+        var r = _userRoles.FirstOrDefault(x => x.Id == id);
+        return r?.Name ?? id.ToString();
+    }
+
+    private async Task CreateUserAsync()
+    {
+        _error = ValidateUserInput(_newUser);
+        if (_error != null)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            var createdUser = await UserApi.CreateAsync(_newUser);
+            if (createdUser != null)
+            {
+                Navigation.NavigateTo($"/users/{createdUser.Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (!HandleUnauthorized(ex))
+            {
+                _error = ex.Message;
+            }
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private static string? ValidateUserInput(UserDto user)
+    {
+        if (string.IsNullOrWhiteSpace(user.Name))
+        {
+            return "Navn må ikke være tomt.";
+        }
+
+        if (user.DepartmentId <= 0)
+        {
+            return "Vælg en afdeling.";
+        }
+
+        if (user.UserRoleId <= 0)
+        {
+            return "Vælg en rolle.";
+        }
+
+        if (user.VactionDays < 0)
+        {
+            return "Feriedage kan ikke være negative.";
+        }
+
+        return null;
+    }
+
+    private void NavigateToEdit(int userId)
+    {
+        Navigation.NavigateTo($"/users/{userId}");
+    }
+
+    private void DeleteUserAsync(int userId)
+    {
+        var name = _users.FirstOrDefault(u => u.Id == userId)?.Name ?? "brugeren";
+        _pendingDeleteUserId = userId;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette {name}? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDeleteUser()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteUserId = null;
+    }
+
+    private async Task ConfirmDeleteUserAsync()
+    {
+        if (!_pendingDeleteUserId.HasValue) return;
+
+        _isSaving = true;
+        _error = null;
+
+        try
+        {
+            await UserApi.DeleteAsync(_pendingDeleteUserId.Value);
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke slette bruger.";
+            }
+        }
+        finally
+        {
+            _isSaving = false;
+            _showDeleteConfirm = false;
+            _pendingDeleteUserId = null;
+        }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
+    }
+}

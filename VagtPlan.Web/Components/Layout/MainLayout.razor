@@ -1,23 +1,87 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@rendermode InteractiveServer
+@inject VagtPlan.Web.Services.ApiAuthState AuthState
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="app-shell">
+    <NavMenu />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    <main class="app-main">
+        <div class="app-content">
+            @if (_authReady)
+            {
+                @Body
+            }
+            else
+            {
+                <div class="loading-state" aria-live="polite">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span>Indlæser...</span>
+                </div>
+            }
         </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
     </main>
 </div>
 
 <div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
+    Der opstod en uventet fejl.
+    <a href="" class="reload">Genindlæs</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    private bool _authReady;
+
+    protected override void OnInitialized()
+    {
+        AuthState.Changed += HandleAuthChanged;
+    }
+
+    private void HandleAuthChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (_authReady)
+            {
+                EnforceLogin();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _authReady)
+        {
+            return;
+        }
+
+        await AuthState.InitializeAsync(JS);
+        _authReady = true;
+        EnforceLogin();
+        StateHasChanged();
+    }
+
+    private void EnforceLogin()
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/').ToLowerInvariant();
+        var isLoginPage = relativePath == "login";
+
+        if (!AuthState.IsAuthenticated && !isLoginPage)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else if (AuthState.IsAuthenticated && isLoginPage)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.Changed -= HandleAuthChanged;
+    }
+}

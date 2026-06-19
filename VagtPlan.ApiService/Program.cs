@@ -1,12 +1,11 @@
 using ApiService.Controllers;
 using ApiService.DBContext;
-// using ApiService.Services;
+using ApiService.Services;
 using ApiService.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using System;
 using System.Reflection;
@@ -42,15 +41,6 @@ public class Program
             {
                 c.IncludeXmlComments(xmlPath);
             }
-
-            // JWT Bearer support for Swagger is intentionally omitted here because the
-            // available Microsoft.OpenApi types in this project don't match the
-            // usual examples (Reference/Models namespace differences). To re-enable
-            // JWT in Swagger, add the proper Microsoft.OpenApi package that provides
-            // `Microsoft.OpenApi.Models` and then use the standard configuration:
-            //
-            // c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme { ... });
-            // c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement { ... });
         });
 
         builder.Services.AddControllers();
@@ -66,7 +56,7 @@ public class Program
 
         // JWT Authentication setup
         // Registrer JWT Service
-        // builder.Services.AddScoped<JwtService>();
+        builder.Services.AddScoped<JwtService>();
 
         // Konfigurer JWT Authentication
         var jwtSecretKey = Configuration["Jwt:SecretKey"]
@@ -102,7 +92,6 @@ public class Program
 
         builder.Services.AddAuthorization();
         builder.Services.AddOpenApi();
-        builder.Services.AddSwaggerGen();
 
         // Add CORS support for Flutter app
         builder.Services.AddCors(options =>
@@ -110,8 +99,8 @@ public class Program
             options.AddPolicy("AllowFlutterApp", policy =>
             {
                 policy.WithOrigins(
-                        "https://h4-flutter.mercantec.tech",
-                        "https://h4-api.mercantec.tech"
+                        "https://vagtplan.dk",
+                        "https://vagtplan.dk"
                     )
                     .AllowAnyMethod()               // Allow GET, POST, PUT, DELETE, etc.
                     .AllowAnyHeader()               // Allow any headers
@@ -175,6 +164,7 @@ public class Program
         // Enable CORS - SKAL være før UseAuthorization
         app.UseCors(app.Environment.IsDevelopment() ? "AllowAllLocalhost" : "AllowFlutterApp");
 
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();

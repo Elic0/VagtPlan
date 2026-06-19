@@ -1,0 +1,444 @@
+﻿@page "/specialwishes"
+@rendermode InteractiveServer
+@using VagtPlan.Web.Services
+@inject WishService WishService
+@inject UserService UserService
+@inject StatusService StatusService
+@inject NavigationManager Navigation
+@inject ApiAuthState AuthState
+
+<PageTitle>Ønsker — VagtPlan</PageTitle>
+
+<div class="departments-page">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow">Vagtplan</p>
+            <h1>Ønsker</h1>
+            <p class="page-subtitle">Opret og administrer ønsker for brugere.</p>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert-banner" role="alert">@errorMessage</div>
+    }
+
+    <div class="row g-3 mb-3 vp-split-layout">
+        <div class="col-12 col-lg-4">
+            <section class="card-panel">
+                <h2>Brugere</h2>
+                <label class="form-label">Vælg brugere</label>
+                <div class="vp-scroll-panel"> 
+                    @if (users != null)
+                    {
+                        @foreach (var u in users)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="user_@u.Id" checked="@selectedUserIds.Contains(u.Id)" @onclick="() => ToggleUser(u.Id)" />
+                                <label class="form-check-label" for="user_@u.Id">@u.Name</label>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-8">
+            <section class="card-panel create-panel">
+                <h2>Opret ønsker for valgte brugere</h2>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Startdato</label>
+                        <DanishDateInput @bind-Value="CreateStartDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Slutdato</label>
+                        <DanishDateInput @bind-Value="CreateEndDate" Disabled="@IsStatusDefault(createModel.StatusId)" />
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Ugedage</label>
+                    <div class="vp-weekday-grid">
+                        @foreach (var d in Days)
+                        {
+                            <div class="form-check vp-weekday-item">
+                                <input class="form-check-input" type="checkbox" id="day_@d.Value" @bind="daySelections[d.Value]" />
+                                <label class="form-check-label" for="day_@d.Value">@d.Label</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" @bind="createModel.StatusId">
+                        <option value="0">-- vælg status --</option>
+                        @if (statuses != null)
+                        {
+                            @foreach (var s in statuses)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="create-panel-actions">
+                    <button type="button" class="btn-primary-action" @onclick="CreateWishesAsync">Opret ønsker</button>
+                </div>
+            </section>
+
+            <section class="card-panel list-panel">
+                <div class="panel-heading">
+                    <h2>Eksisterende ønsker</h2>
+                    <span class="count-badge">@(wishes?.Count ?? 0)</span>
+                </div>
+                @if (wishes == null)
+                {
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <span>Indlæser ønsker…</span>
+                    </div>
+                }
+                else if (!wishes.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="bi bi-stars"></i></div>
+                        <p>Ingen ønsker fundet</p>
+                        <span>Opret ønsker for valgte brugere ovenfor.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="department-grid">
+                        @foreach (var group in WishGroups)
+                        {
+                            var userId = group.Key;
+                            var userName = GetUserName(userId) ?? "Ukendt bruger";
+                            var isExpanded = expandedUserIds.Contains(userId);
+
+                            <article class="wish-user-group @(isExpanded ? "is-expanded" : "")">
+                                <button type="button"
+                                        class="wish-user-group-header department-card"
+                                        aria-expanded="@isExpanded"
+                                        @onclick="() => ToggleUserGroup(userId)">
+                                    <div class="department-card-body">
+                                        <div class="department-icon"><i class="bi bi-person"></i></div>
+                                        <div class="department-card-info">
+                                            <h3>@userName</h3>
+                                            <span class="wish-user-group-count">@group.Count() @(group.Count() == 1 ? "ønske" : "ønsker")</span>
+                                        </div>
+                                    </div>
+                                    <i class="bi bi-chevron-down wish-user-group-chevron" aria-hidden="true"></i>
+                                </button>
+
+                                @if (isExpanded)
+                                {
+                                    <div class="wish-user-group-items">
+                                        @foreach (var w in group.OrderBy(w => w.DayOfWeek))
+                                        {
+                                            <article class="department-card wish-item-card">
+                                                <div class="department-card-body">
+                                                    <div class="department-icon"><i class="bi bi-stars"></i></div>
+                                                    <div class="department-card-info">
+                                                        <div class="vp-record-meta">
+                                                            <span class="vp-pill">@GetDanishDayName(w.DayOfWeek)</span>
+                                                            <span class="vp-pill">Start: @DateDisplayHelper.Format(w.StartDate)</span>
+                                                            <span class="vp-pill">Slut: @DateDisplayHelper.Format(w.EndDate)</span>
+                                                            <span class="vp-pill">Status: @(GetStatusName(w.StatusId) ?? "-")</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="department-card-actions">
+                                                    <button class="btn-delete" @onclick="() => DeleteWishAsync(w)" @onclick:stopPropagation="true">
+                                                        <i class="bi bi-trash3"></i>
+                                                        Slet
+                                                    </button>
+                                                </div>
+                                            </article>
+                                        }
+                                    </div>
+                                }
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+</div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet ønske?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet ønske"
+    IsProcessing="_isDeleting"
+    OnConfirm="ConfirmDeleteWishAsync"
+    OnCancel="CancelDeleteWish" />
+
+@code {
+    private List<UserListItemDto>? users;
+    private List<SpecialWishDto>? wishes;
+    private List<StatusDto>? statuses;
+
+    private Dictionary<string, bool> daySelections = new();
+    private static readonly (string Value, string Label)[] Days = new[]
+    {
+        ("Monday", "Mandag"),
+        ("Tuesday", "Tirsdag"),
+        ("Wednesday", "Onsdag"),
+        ("Thursday", "Torsdag"),
+        ("Friday", "Fredag")
+    };
+
+    private CreateModel createModel = new();
+    private string? errorMessage;
+    private SpecialWishDto? _pendingDeleteWish;
+    private bool _showDeleteConfirm;
+    private bool _isDeleting;
+    private string _deleteConfirmMessage = string.Empty;
+
+    private HashSet<int> selectedUserIds = new();
+    private HashSet<int> expandedUserIds = new();
+
+    private IEnumerable<IGrouping<int, SpecialWishDto>> WishGroups =>
+        wishes?.GroupBy(w => w.UserId)
+            .OrderBy(g => GetUserName(g.Key) ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+        ?? Enumerable.Empty<IGrouping<int, SpecialWishDto>>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            foreach (var d in Days) daySelections[d.Value] = false;
+            await LoadUsers();
+            await LoadStatuses();
+            await LoadWishes();
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
+    }
+
+    private async Task LoadUsers() => users = (await UserService.GetAllAsync()).OrderBy(u => u.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+    private async Task LoadStatuses() => statuses = (await StatusService.GetAllAsync()).OrderBy(s => s.Name, System.StringComparer.OrdinalIgnoreCase).ToList();
+    private async Task LoadWishes() => wishes = (await WishService.GetAllAsync()).OrderBy(w => GetUserName(w.UserId) ?? string.Empty).ThenBy(w => w.DayOfWeek).ToList();
+
+    private void ToggleUser(int id)
+    {
+        if (selectedUserIds.Contains(id)) selectedUserIds.Remove(id);
+        else selectedUserIds.Add(id);
+    }
+
+    private void ToggleUserGroup(int userId)
+    {
+        if (expandedUserIds.Contains(userId)) expandedUserIds.Remove(userId);
+        else expandedUserIds.Add(userId);
+    }
+
+    private DateTime? CreateStartDate
+    {
+        get => createModel.StartDate?.ToDateTime(TimeOnly.MinValue);
+        set => createModel.StartDate = value.HasValue ? DateOnly.FromDateTime(value.Value.Date) : null;
+    }
+
+    private DateTime? CreateEndDate
+    {
+        get => createModel.EndDate?.ToDateTime(TimeOnly.MinValue);
+        set => createModel.EndDate = value.HasValue ? DateOnly.FromDateTime(value.Value.Date) : null;
+    }
+
+    private bool IsStatusDefault(int statusId)
+    {
+        var s = statuses?.FirstOrDefault(x => x.Id == statusId);
+        return s != null && s.Default;
+    }
+
+    private string? GetUserName(int userId) => users?.FirstOrDefault(u => u.Id == userId)?.Name;
+    private string? GetStatusName(int statusId) => statuses?.FirstOrDefault(s => s.Id == statusId)?.Name;
+    private static string GetDanishDayName(string dayOfWeek) => dayOfWeek switch
+    {
+        "Monday" => "Mandag",
+        "Tuesday" => "Tirsdag",
+        "Wednesday" => "Onsdag",
+        "Thursday" => "Torsdag",
+        "Friday" => "Fredag",
+        "Saturday" => "Lørdag",
+        "Sunday" => "Søndag",
+        _ => dayOfWeek
+    };
+
+    private async Task CreateWishesAsync()
+    {
+        errorMessage = null;
+        if (selectedUserIds == null || !selectedUserIds.Any())
+        {
+            errorMessage = "Vælg mindst én bruger.";
+            return;
+        }
+        if (createModel.StatusId == 0)
+        {
+            errorMessage = "Vælg en status.";
+            return;
+        }
+        var selectedDays = daySelections.Where(kv => kv.Value).Select(kv => kv.Key).ToList();
+        if (!selectedDays.Any())
+        {
+            errorMessage = "Vælg mindst én ugedag.";
+            return;
+        }
+
+        var statusIsDefault = IsStatusDefault(createModel.StatusId);
+
+        if (!statusIsDefault)
+        {
+            if (!createModel.StartDate.HasValue || !createModel.EndDate.HasValue)
+            {
+                errorMessage = "Angiv både startdato og slutdato.";
+                return;
+            }
+            if (createModel.EndDate < createModel.StartDate)
+            {
+                errorMessage = "Slutdato skal være efter startdato.";
+                return;
+            }
+        }
+
+        var start = createModel.StartDate;
+        var end = createModel.EndDate;
+
+        if (!statusIsDefault)
+        {
+            var conflictMessages = new List<string>();
+
+            foreach (var uid in selectedUserIds)
+            {
+                foreach (var day in selectedDays)
+                {
+                    var existing = wishes?
+                        .Where(w => w.UserId == uid && w.DayOfWeek == day && w.StatusId == createModel.StatusId)
+                        .ToList() ?? [];
+
+                    foreach (var e in existing)
+                    {
+                        if ((e.StartDate == null && e.EndDate == null) || DateRangesOverlap(e.StartDate, e.EndDate, start, end))
+                        {
+                            var userName = GetUserName(uid) ?? uid.ToString();
+                            var statusName = GetStatusName(createModel.StatusId) ?? createModel.StatusId.ToString();
+                            conflictMessages.Add($"Ønske for {userName} på {GetDanishDayName(day)} med status '{statusName}' overlapper med et eksisterende ønske.");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (conflictMessages.Count > 0)
+            {
+                errorMessage = string.Join(" ", conflictMessages.Distinct());
+                return;
+            }
+        }
+
+        foreach (var uid in selectedUserIds)
+        {
+            foreach (var day in selectedDays)
+            {
+                var req = new SpecialWishRequest
+                {
+                    StartDate = statusIsDefault ? null : start,
+                    EndDate = statusIsDefault ? null : end,
+                    DayOfWeek = day,
+                    UserId = uid,
+                    StatusId = createModel.StatusId
+                };
+
+                var created = await WishService.CreateAsync(req);
+                if (created == null)
+                {
+                    errorMessage = "Kunne ikke oprette et eller flere ønsker.";
+                }
+            }
+        }
+        try
+        {
+            await LoadWishes();
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
+    }
+
+    private void DeleteWishAsync(SpecialWishDto w)
+    {
+        _pendingDeleteWish = w;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette ønsket for {GetUserName(w.UserId)} ({GetDanishDayName(w.DayOfWeek)})?";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDeleteWish()
+    {
+        _showDeleteConfirm = false;
+        _pendingDeleteWish = null;
+    }
+
+    private async Task ConfirmDeleteWishAsync()
+    {
+        if (_pendingDeleteWish == null) return;
+
+        _isDeleting = true;
+        errorMessage = null;
+
+        try
+        {
+            await WishService.DeleteAsync(_pendingDeleteWish.Id);
+            await LoadWishes();
+        }
+        catch (Exception ex) when (HandleUnauthorized(ex))
+        {
+        }
+        finally
+        {
+            _isDeleting = false;
+            _showDeleteConfirm = false;
+            _pendingDeleteWish = null;
+        }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool DateRangesOverlap(DateOnly? aStart, DateOnly? aEnd, DateOnly? bStart, DateOnly? bEnd)
+    {
+        if (!aStart.HasValue || !aEnd.HasValue || !bStart.HasValue || !bEnd.HasValue)
+        {
+            return false;
+        }
+
+        return aStart.Value <= bEnd.Value && bStart.Value <= aEnd.Value;
+    }
+
+    private class CreateModel
+    {
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
+        public int StatusId { get; set; }
+    }
+}
