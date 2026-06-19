@@ -15,6 +15,10 @@ services:
     build: .
     depends_on:
       - api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__ApiBaseUrl=http://api:3000
     ports:
       - "8080:80"
 
