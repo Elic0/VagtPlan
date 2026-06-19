@@ -169,7 +169,7 @@ public class Program
             options.RoutePrefix = "swagger"; // Tilgængelig på /swagger
         });
 
-        app.UseStaticFiles(); // Vigtig for SwaggerBootstrap pakken
+        app.UseStaticFiles();
 
 
         // Enable Scalar UI (moderne alternativ til Swagger UI)
