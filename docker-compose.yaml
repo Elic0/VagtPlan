@@ -26,7 +26,7 @@ services:
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
       - Jwt__Audience=${JWT_AUDIENCE}
       - Jwt__Issuer=${JWT_ISSUER}
-      - Jwt__SecretKey=${JWT_SECRET}
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Expire__Minutes=${JWT_EXPIRE_MINUTES}
       - ADMIN__AUTH__USERNAME=${ADMIN_AUTH_USERNAME}
       - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
