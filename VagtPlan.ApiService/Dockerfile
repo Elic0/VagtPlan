@@ -1,21 +1,21 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy project files for restore
-COPY VagtPlan.ApiService/ApiService.csproj VagtPlan.ApiService/
+COPY VagtPlan.Web/VagtPlan.Web.csproj VagtPlan.Web/
 COPY VagtPlan.ServiceDefaults/VagtPlan.ServiceDefaults.csproj VagtPlan.ServiceDefaults/
 
-RUN dotnet restore VagtPlan.ApiService/ApiService.csproj
+RUN dotnet restore VagtPlan.Web/VagtPlan.Web.csproj
 
-# Copy everything else and publish
 COPY . .
-WORKDIR /src/VagtPlan.ApiService
+WORKDIR /src/VagtPlan.Web
 RUN dotnet publish -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
-WORKDIR /app
-COPY --from=build /app/publish .
+FROM nginx:alpine AS final
+WORKDIR /usr/share/nginx/html
 
-ENV ASPNETCORE_URLS=http://+:3000
-EXPOSE 3000
-ENTRYPOINT ["dotnet", "ApiService.dll"]
+RUN rm -rf ./*
+COPY --from=build /app/publish/wwwroot .
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
