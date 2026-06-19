@@ -8,7 +8,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql
     ports:
       - "5432:5432"
   web:
@@ -30,6 +30,11 @@ services:
       - Jwt__Expire__Minutes=${JWT_EXPIRE_MINUTES}
       - ADMIN__AUTH__USERNAME=${ADMIN_AUTH_USERNAME}
       - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
+      # Enable developer logs and host diagnostics to capture native crashes
+      - ASPNETCORE_ENVIRONMENT=Development
+      - COREHOST_TRACE=1
+      - COREHOST_TRACE_VERBOSITY=4
+      - DOTNET_EnableDiagnostics=1
     depends_on:
       - postgres
     ports:
