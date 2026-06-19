@@ -18,7 +18,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__ApiBaseUrl=http://api:3000
+      - ApiBaseUrl=http://apiservice:80/
     ports:
       - "8080:80"
 
@@ -36,13 +36,14 @@ services:
       - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
       # Enable developer logs and host diagnostics to capture native crashes
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
       - COREHOST_TRACE=1
       - COREHOST_TRACE_VERBOSITY=4
       - DOTNET_EnableDiagnostics=1
     depends_on:
       - postgres
     ports:
-      - "3000:3000"
+      - "3000:80"
 
 networks:
   default:
