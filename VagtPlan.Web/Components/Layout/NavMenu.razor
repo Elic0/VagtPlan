@@ -5,9 +5,10 @@
 
 <header class="vp-header">
     <div class="vp-header-surface" aria-hidden="true"></div>
+    <div class="vp-header-glow" aria-hidden="true"></div>
 
     <div class="vp-header-container">
-        <div class="vp-header-row">
+        <div class="vp-header-grid @(_menuOpen ? "is-menu-open" : "")">
             <a href="/" class="vp-brand" @onclick="CloseMenu">
                 <span class="vp-brand-icon" aria-hidden="true">
                     <i class="bi bi-telephone-fill"></i>
@@ -18,18 +19,7 @@
                 </span>
             </a>
 
-            <button type="button"
-                    class="vp-menu-btn @(_menuOpen ? "is-open" : "")"
-                    @onclick="ToggleMenu"
-                    aria-label="@(_menuOpen ? "Luk menu" : "Åbn menu")"
-                    aria-expanded="@_menuOpen"
-                    aria-controls="vp-main-nav">
-                <span class="vp-menu-btn-bar"></span>
-                <span class="vp-menu-btn-bar"></span>
-                <span class="vp-menu-btn-bar"></span>
-            </button>
-
-            <div id="vp-main-nav" class="vp-nav-drawer @(_menuOpen ? "is-open" : "")">
+            <div id="vp-main-nav" class="vp-nav-shell @(_menuOpen ? "is-open" : "")">
                 <nav class="vp-nav" aria-label="Hovednavigation">
                     <NavLink href="" Match="NavLinkMatch.All" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
                         <i class="bi bi-house-door" aria-hidden="true"></i>
@@ -40,39 +30,59 @@
                         <span>Afdelinger</span>
                     </NavLink>
                     <NavLink href="statuses" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
-                        <i class="bi bi-building" aria-hidden="true"></i>
-                        <span>Statuses</span>
+                        <i class="bi bi-palette2" aria-hidden="true"></i>
+                        <span>Statusser</span>
                     </NavLink>
                     <NavLink href="specialwishes" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
-                        <i class="bi bi-building" aria-hidden="true"></i>
-                        <span>Special wishes</span>
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                        <span>Ønsker</span>
                     </NavLink>
                     <NavLink href="scheduler" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
-                        <i class="bi bi-building" aria-hidden="true"></i>
-                        <span>Scheduler</span>
+                        <i class="bi bi-calendar2-week" aria-hidden="true"></i>
+                        <span>Planlægger</span>
                     </NavLink>
                     <NavLink href="schedule" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
-                        <i class="bi bi-building" aria-hidden="true"></i>
-                        <span>Schedule</span>
+                        <i class="bi bi-calendar3" aria-hidden="true"></i>
+                        <span>Vagtplan</span>
                     </NavLink>
                     <NavLink href="users" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
-                        <i class="bi bi-building" aria-hidden="true"></i>
-                        <span>Users</span>
+                        <i class="bi bi-people" aria-hidden="true"></i>
+                        <span>Brugere</span>
                     </NavLink>
                     <NavLink href="role" class="vp-nav-item" ActiveClass="is-active" @onclick="CloseMenu">
-                        <i class="bi bi-building" aria-hidden="true"></i>
-                        <span>Roles</span>
+                        <i class="bi bi-person-badge" aria-hidden="true"></i>
+                        <span>Roller</span>
                     </NavLink>
-                    @if (AuthState.IsAuthenticated)
-                    {
-                        <button type="button" class="vp-nav-item vp-nav-logout" @onclick="Logout" aria-label="Log ud">
-                            <span class="vp-nav-logout-icon" aria-hidden="true">
-                                <i class="bi bi-box-arrow-right"></i>
-                            </span>
-                            <span>Log ud</span>
-                        </button>
-                    }
                 </nav>
+
+                @if (AuthState.IsAuthenticated)
+                {
+                    <button type="button" class="vp-header-logout vp-header-logout--mobile" @onclick="Logout" aria-label="Log ud">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                        <span>Log ud</span>
+                    </button>
+                }
+            </div>
+
+            <div class="vp-header-actions">
+                @if (AuthState.IsAuthenticated)
+                {
+                    <button type="button" class="vp-header-logout vp-header-logout--desktop" @onclick="Logout" aria-label="Log ud">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                        <span>Log ud</span>
+                    </button>
+                }
+
+                <button type="button"
+                        class="vp-menu-btn @(_menuOpen ? "is-open" : "")"
+                        @onclick="ToggleMenu"
+                        aria-label="@(_menuOpen ? "Luk menu" : "Åbn menu")"
+                        aria-expanded="@_menuOpen"
+                        aria-controls="vp-main-nav">
+                    <span class="vp-menu-btn-bar"></span>
+                    <span class="vp-menu-btn-bar"></span>
+                    <span class="vp-menu-btn-bar"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -111,4 +121,3 @@
         AuthState.Changed -= HandleAuthStateChanged;
     }
 }
-

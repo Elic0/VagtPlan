@@ -1,6 +1,6 @@
-﻿using VagtPlan.Web.Models;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using VagtPlan.Web.Models;
 
 
 namespace VagtPlan.Web.Services
@@ -28,12 +28,11 @@ namespace VagtPlan.Web.Services
             return await response.Content.ReadFromJsonAsync<UserRoleModel>(cancellationToken);
         }
 
-        public async Task<UserRoleModel?> UpdateAsync(int id, UserRoleDto dto, CancellationToken cancellationToken = default)
+        public async Task UpdateAsync(int id, UserRoleDto dto, CancellationToken cancellationToken = default)
         {
             EnsureAuthorizedRequest();
             var response = await httpClient.PutAsJsonAsync($"api/UserRole/edit/{id}", dto, cancellationToken);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<UserRoleModel>(cancellationToken);
         }
 
         public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)

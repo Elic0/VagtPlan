@@ -1,57 +1,75 @@
-﻿using VagtPlan.Web.Models;
-using System.Net.Http.Json;
-using System.Net.Http.Headers;
-
-namespace VagtPlan.Web.Services
+﻿namespace VagtPlan.Web.Services
 {
-    public class WishService(HttpClient httpClient, ApiAuthState authState)
+    using System.Net.Http.Json;
+    using System.Net.Http.Headers;
+
+    public class WishService
     {
+        private readonly HttpClient _http;
+        private readonly ApiAuthState _authState;
         private const string BasePath = "api/SpecialWishes";
 
-
-        public async Task<List<SpecialWishDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        public WishService(HttpClient http, ApiAuthState authState)
         {
-            EnsureAuthorizedRequest();
-            return await httpClient.GetFromJsonAsync<List<SpecialWishDto>>($"{BasePath}/get", cancellationToken) ?? new List<SpecialWishDto>();
+            _http = http;
+            _authState = authState;
         }
 
-        public async Task<SpecialWishDto?> GetAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<List<SpecialWishDto>> GetAllAsync()
         {
             EnsureAuthorizedRequest();
-            return await httpClient.GetFromJsonAsync<SpecialWishDto>($"{BasePath}/get/{id}", cancellationToken);
+            return await _http.GetFromJsonAsync<List<SpecialWishDto>>($"{BasePath}/get") ?? new List<SpecialWishDto>();
         }
 
-        public async Task<SpecialWishDto?> CreateAsync(SpecialWishRequest request, CancellationToken cancellationToken = default)
+        public async Task<SpecialWishDto?> GetAsync(int id)
         {
             EnsureAuthorizedRequest();
-            var response = await httpClient.PostAsJsonAsync($"{BasePath}/createSpecialWish", request, cancellationToken);
-            if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadFromJsonAsync<SpecialWishDto>();
+            return await _http.GetFromJsonAsync<SpecialWishDto>($"{BasePath}/get/{id}");
         }
 
-        public async Task<bool> UpdateAsync(int id, SpecialWishRequest request, CancellationToken cancellationToken = default)
+        public async Task<SpecialWishDto?> CreateAsync(SpecialWishRequest request)
         {
             EnsureAuthorizedRequest();
-            var response = await httpClient.PutAsJsonAsync($"{BasePath}/edit/{id}", request, cancellationToken);
-            return response.IsSuccessStatusCode;
+            var resp = await _http.PostAsJsonAsync($"{BasePath}/createSpecialWish", request);
+            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new InvalidOperationException("Du er ikke logget ind.");
+            }
+            if (!resp.IsSuccessStatusCode) return null;
+            return await resp.Content.ReadFromJsonAsync<SpecialWishDto>();
         }
 
-        public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<bool> UpdateAsync(int id, SpecialWishRequest request)
         {
             EnsureAuthorizedRequest();
-            var response = await httpClient.DeleteAsync($"{BasePath}/delete/{id}", cancellationToken);
-            return response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent;
+            var resp = await _http.PutAsJsonAsync($"{BasePath}/edit/{id}", request);
+            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new InvalidOperationException("Du er ikke logget ind.");
+            }
+            return resp.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            EnsureAuthorizedRequest();
+            var resp = await _http.DeleteAsync($"{BasePath}/delete/{id}");
+            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new InvalidOperationException("Du er ikke logget ind.");
+            }
+            return resp.IsSuccessStatusCode || resp.StatusCode == System.Net.HttpStatusCode.NoContent;
         }
 
         private void EnsureAuthorizedRequest()
         {
-            if (!authState.IsAuthenticated || string.IsNullOrWhiteSpace(authState.Token))
+            if (!_authState.IsAuthenticated || string.IsNullOrWhiteSpace(_authState.Token))
             {
                 throw new InvalidOperationException("Du er ikke logget ind.");
             }
 
-            httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", authState.Token);
+            _http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _authState.Token);
         }
     }
 

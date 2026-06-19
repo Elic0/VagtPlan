@@ -58,9 +58,16 @@ namespace ApiService.Controllers
                 return NotFound();
             }
 
-            user.Name = userDTO.Name;
+            var validationError = await ValidateUserDtoAsync(userDTO);
+            if (validationError != null)
+            {
+                return BadRequest(validationError);
+            }
+
+            user.Name = userDTO.Name.Trim();
             user.VactionDays = userDTO.VactionDays;
             user.DepartmentId = userDTO.DepartmentId;
+            user.UserRoleId = userDTO.UserRoleId;
 
             try
             {
@@ -72,10 +79,12 @@ namespace ApiService.Controllers
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest("Kunne ikke gemme bruger. Tjek at afdeling og rolle findes.");
             }
 
             return Ok(user);
@@ -86,16 +95,30 @@ namespace ApiService.Controllers
         [HttpPost("createUser")]
         public async Task<ActionResult<UserDTO>> PostUser(UserDTO userDTO)
         {
+            var validationError = await ValidateUserDtoAsync(userDTO);
+            if (validationError != null)
+            {
+                return BadRequest(validationError);
+            }
+
             var user = new User
             {
-                Name = userDTO.Name,
+                Name = userDTO.Name.Trim(),
                 Password = null,
                 VactionDays = userDTO.VactionDays,
                 DepartmentId = userDTO.DepartmentId,
                 UserRoleId = userDTO.UserRoleId
             };
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest("Kunne ikke oprette bruger. Tjek at afdeling og rolle findes.");
+            }
 
             return Ok(user);
         }
@@ -133,6 +156,41 @@ namespace ApiService.Controllers
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.Id == id);
+        }
+
+        private async Task<string?> ValidateUserDtoAsync(UserDTO userDTO)
+        {
+            if (string.IsNullOrWhiteSpace(userDTO.Name))
+            {
+                return "Navn må ikke være tomt.";
+            }
+
+            if (userDTO.DepartmentId <= 0)
+            {
+                return "Vælg en afdeling.";
+            }
+
+            if (!await _context.Departments.AnyAsync(d => d.Id == userDTO.DepartmentId))
+            {
+                return "Afdelingen findes ikke.";
+            }
+
+            if (userDTO.UserRoleId <= 0)
+            {
+                return "Vælg en rolle.";
+            }
+
+            if (!await _context.UserRoles.AnyAsync(r => r.Id == userDTO.UserRoleId))
+            {
+                return "Rollen findes ikke.";
+            }
+
+            if (userDTO.VactionDays < 0)
+            {
+                return "Feriedage kan ikke være negative.";
+            }
+
+            return null;
         }
     }
 }

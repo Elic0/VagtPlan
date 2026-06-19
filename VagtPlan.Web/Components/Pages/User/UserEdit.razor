@@ -3,6 +3,7 @@
 @inject DepartmentApiClient DepartmentApi
 @inject UserRoleApiClient UserRoleApi
 @inject NavigationManager Navigation
+@inject ApiAuthState AuthState
 @using VagtPlan.Web.Models
 @rendermode InteractiveServer
 
@@ -10,7 +11,7 @@
 
 <div class="edit-page">
     <nav class="breadcrumb">
-        <a href="/users">Bruger Håndtering</a>
+        <a href="/users">Brugerhåndtering</a>
         <span class="sep">/</span>
         <span>@(_user?.Name ?? "...")</span>
     </nav>
@@ -24,8 +25,8 @@
     }
     else if (_user is null)
     {
-        <div class="alert-banner">Brugeren blev ikke funder</div>
-        <a href="/users" class="back-link">Tilbage til bruger håndtering</a>
+        <div class="alert-banner">Brugeren blev ikke fundet</div>
+        <a href="/users" class="back-link">Tilbage til brugerhåndtering</a>
     }
     else
     {
@@ -48,7 +49,7 @@
             <EditForm Model="_form" OnValidSubmit="SaveUserAsync" class="create-form">
                 <DataAnnotationsValidator />
 
-                <div class="form-row">
+                <div class="edit-form-fields">
                     <div class="field-group">
                         <label for="user-name">Navn</label>
                         <InputText id="user-name" @bind-Value="_form.Name" class="field-input" />
@@ -73,20 +74,35 @@
                             }
                         </InputSelect>
                     </div>
-                    <div class="field-group">
-                        <label for="user-vacation">Vaction Dage</label>
+                    <div class="field-group field-group-narrow">
+                        <label for="user-vacation">Feriedage</label>
                         <InputNumber id="user-vacation" @bind-Value="_form.VactionDays" class="field-input" />
                     </div>
                 </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary-action" disabled="@_isSaving">@(_isSaving ? "Gemmer…" : "Gem")</button>
-                    <button type="button" class="btn-secondary" @onclick="Cancel" disabled="@_isSaving">Annuller</button>
-                    <button type="button" class="btn-delete" @onclick="DeleteAsync" disabled="@_isSaving">Slet</button>
+
+                <div class="form-actions edit-form-actions">
+                    <div class="form-actions-primary">
+                        <button type="button" class="btn-secondary" @onclick="Cancel" disabled="@_isSaving">Annuller</button>
+                        <button type="submit" class="btn-primary-action" disabled="@_isSaving">@(_isSaving ? "Gemmer…" : "Gem")</button>
+                    </div>
+                    <button type="button" class="btn-delete" @onclick="DeleteAsync" disabled="@_isSaving">
+                        <i class="bi bi-trash3"></i>
+                        Slet bruger
+                    </button>
                 </div>
             </EditForm>
         </section>
     }
 </div>
+
+<ConfirmDialog
+    IsVisible="_showDeleteConfirm"
+    Title="Slet bruger?"
+    Message="@_deleteConfirmMessage"
+    ConfirmText="Slet bruger"
+    IsProcessing="_isSaving"
+    OnConfirm="ConfirmDeleteAsync"
+    OnCancel="CancelDelete" />
 
 @code {
     [Parameter]
@@ -107,6 +123,8 @@
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _error;
+    private bool _showDeleteConfirm;
+    private string _deleteConfirmMessage = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -132,9 +150,12 @@
                 _form.password = _user.password;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke hente bruger. Tjek at Api'en kører";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke hente bruger. Tjek at Api'en kører";
+            }
         }
         finally
         {
@@ -146,9 +167,9 @@
 
     private async Task SaveUserAsync()
     {
-        if (string.IsNullOrWhiteSpace(_form.Name))
+        _error = ValidateUserInput(_form);
+        if (_error != null)
         {
-            _error = "Navn må ikke være tomt.";
             return;
         }
 
@@ -160,9 +181,12 @@
             await UserApi.UpdateAsync(UserId, _form);
             Navigation.NavigateTo("/users");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke gemme bruger.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = ex.Message;
+            }
         }
         finally
         {
@@ -170,10 +194,45 @@
         }
     }
 
+    private static string? ValidateUserInput(UserDto user)
+    {
+        if (string.IsNullOrWhiteSpace(user.Name))
+        {
+            return "Navn må ikke være tomt.";
+        }
+
+        if (user.DepartmentId <= 0)
+        {
+            return "Vælg en afdeling.";
+        }
+
+        if (user.UserRoleId <= 0)
+        {
+            return "Vælg en rolle.";
+        }
+
+        if (user.VactionDays < 0)
+        {
+            return "Feriedage kan ikke være negative.";
+        }
+
+        return null;
+    }
+
     private async Task DeleteAsync()
     {
-        var confirmed = true;
-        if (!confirmed) return;
+        _deleteConfirmMessage = $"Er du sikker på, at du vil slette {_user?.Name ?? "denne bruger"}? Denne handling kan ikke fortrydes.";
+        _showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        _showDeleteConfirm = false;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        _showDeleteConfirm = false;
 
         _isSaving = true;
         _error = null;
@@ -183,13 +242,38 @@
             await UserApi.DeleteAsync(UserId);
             Navigation.NavigateTo("/users");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _error = "Kunne ikke slette bruger.";
+            if (!HandleUnauthorized(ex))
+            {
+                _error = "Kunne ikke slette bruger.";
+            }
         }
         finally
         {
             _isSaving = false;
         }
+    }
+
+    private bool HandleUnauthorized(Exception ex)
+    {
+        if (ex is InvalidOperationException invalidOp &&
+            invalidOp.Message.Contains("ikke logget ind", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "Din session er udløbet. Log ind igen.";
+            AuthState.Clear();
+            Navigation.NavigateTo("/login");
+            return true;
+        }
+
+        return false;
     }
 }

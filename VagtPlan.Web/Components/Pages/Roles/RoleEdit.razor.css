@@ -119,6 +119,21 @@
     align-items: center;
 }
 
+.edit-form-actions {
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eef2f7;
+    flex-wrap: wrap;
+}
+
+.form-actions-primary {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .btn-secondary {
     padding: 0.65rem 1rem;
     background: #fff;
@@ -149,6 +164,9 @@
 }
 
 .btn-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     padding: 0.55rem 0.85rem;
     background: transparent;
     color: #94a3b8;
@@ -194,8 +212,20 @@
         align-items: stretch;
     }
 
-    .form-actions {
-        justify-content: flex-end;
+    .edit-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-actions-primary {
         width: 100%;
+    }
+
+    .form-actions-primary .btn-primary-action {
+        flex: 1;
+    }
+
+    .edit-form-actions .btn-delete {
+        justify-content: center;
     }
 }
