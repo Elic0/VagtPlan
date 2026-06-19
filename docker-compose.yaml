@@ -8,7 +8,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
     volumes:
-      - db-data:/var/lib/postgresql
+      - db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
   web:
@@ -24,10 +24,10 @@ services:
       dockerfile: VagtPlan.ApiService/Dockerfile
     environment:
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
-      - JWT__AUDIENCE=${JWT_AUDIENCE}
-      - JWT__ISSUER=${JWT_ISSUER}
-      - JWT__SECRET=${JWT_SECRET}
-      - JWT__EXPIRE__MINUTES=${JWT_EXPIRE_MINUTES}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__SecretKey=${JWT_SECRET}
+      - Jwt__Expire__Minutes=${JWT_EXPIRE_MINUTES}
       - ADMIN__AUTH__USERNAME=${ADMIN_AUTH_USERNAME}
       - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
     depends_on:
