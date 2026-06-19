@@ -1,4 +1,7 @@
 using System.Globalization;
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using VagtPlan.Web;
 using VagtPlan.Web.Components;
 using VagtPlan.Web.Services;
@@ -82,6 +85,13 @@ builder.Services.AddHttpClient<VagtPlan.Web.Services.AuthApiClient>(client =>
 
 builder.Services.AddScoped<VagtPlan.Web.Services.ApiAuthState>();
 
+// Persist DataProtection keys to a directory inside the app (survives restarts/containers)
+var dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys");
+Directory.CreateDirectory(dataProtectionKeysPath);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+    .SetApplicationName("VagtPlan");
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -91,6 +101,18 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// When running behind a reverse proxy (Portainer / Traefik / nginx), enable forwarded headers
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+// Accept forwarded headers from any proxy in containerized environment
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
+// Redirect to HTTPS only when a port is configured or when TLS is terminated by a reverse proxy.
+// In Docker/Portainer we set ASPNETCORE_HTTPS_PORT=443 in compose to avoid the warning.
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
