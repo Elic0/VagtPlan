@@ -35,7 +35,7 @@ services:
       - ADMIN__AUTH__USERNAME=${ADMIN_AUTH_USERNAME}
       - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
       # Enable developer logs and host diagnostics to capture native crashes
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
       - COREHOST_TRACE=1
       - COREHOST_TRACE_VERBOSITY=4
