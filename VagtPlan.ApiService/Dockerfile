@@ -1,14 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY vagtPlan.Web/VagtPlan.Web.csproj VagtPlan.Web/
+COPY VagtPlan.Web/VagtPlan.Web.csproj VagtPlan.Web/
 COPY VagtPlan.ServiceDefaults/VagtPlan.ServiceDefaults.csproj VagtPlan.ServiceDefaults/
 
 RUN dotnet restore VagtPlan.Web/VagtPlan.Web.csproj
 
 # Copy everything else and publish
 COPY . .
-WORKDIR /src/VagtPlan.web
+WORKDIR /src/VagtPlan.Web
 RUN dotnet publish -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM nginx:alpine AS final
