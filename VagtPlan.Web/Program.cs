@@ -70,12 +70,11 @@ app.UseForwardedHeaders();
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseAntiforgery();
 
 app.UseOutputCache();
-
-//app.MapStaticAssets();
-app.UseStaticFiles();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
