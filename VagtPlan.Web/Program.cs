@@ -70,7 +70,7 @@ app.UseForwardedHeaders();
 
 app.UseHttpsRedirection();
 
-app.UseAntiforgery();
+//app.UseAntiforgery();
 
 app.UseOutputCache();
 
