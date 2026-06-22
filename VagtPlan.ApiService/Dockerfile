@@ -11,12 +11,11 @@ COPY . .
 WORKDIR /src/VagtPlan.Web
 RUN dotnet publish -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
-FROM nginx:alpine AS final
-WORKDIR /usr/share/nginx/html
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
 
-RUN rm -rf ./*
-COPY --from=build /app/publish/wwwroot .
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/publish .
+
 
 EXPOSE 80
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["dotnet", "VagtPlan.Web.dll"]
