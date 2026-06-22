@@ -1,11 +1,15 @@
 services:
   app:
     image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
+    container_name: nginx-proxy
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
     ports:
       - '80:80'
       - '81:81'
       - '443:443'
+    restart: unless-stopped
   postgres:
     image: postgres:16-alpine
     container_name: vagtplanDB
