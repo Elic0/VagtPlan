@@ -16,5 +16,4 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 EXPOSE 80
-RUN ls -la /app/
-ENTRYPOINT ["dotnet", "VagtPlan.ApiService.dll"]
+ENTRYPOINT ["dotnet", "ApiService.dll"]
