@@ -8,7 +8,7 @@ RUN dotnet restore VagtPlan.ApiService/ApiService.csproj
 
 COPY . .
 WORKDIR /src/VagtPlan.ApiService
-RUN dotnet publish -c Release -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

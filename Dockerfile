@@ -10,7 +10,7 @@ RUN dotnet restore VagtPlan.Web/VagtPlan.Web.csproj
 # Copy everything else and publish
 COPY . .
 WORKDIR /src/VagtPlan.Web
-RUN dotnet publish -c Release -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
