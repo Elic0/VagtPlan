@@ -1,7 +1,8 @@
-﻿<!DOCTYPE html>
-<html lang="da-DK">
+﻿@using Microsoft.AspNetCore.Components.Web
 
-<head>
+<HeadOutlet />
+
+<HeadContent>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
@@ -13,16 +14,12 @@
     <link rel="stylesheet" href="@Assets["VagtPlan.Web.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet />
-</head>
+</HeadContent>
 
-<body>
-    <Routes />
-    <script src="js/authStorage.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/da.js"></script>
-    <script src="js/danishDateInput.js"></script>
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
-</body>
+<Routes />
 
-</html>
+<script src="js/authStorage.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/da.js"></script>
+<script src="js/danishDateInput.js"></script>
+<script src="@Assets["_framework/blazor.server.js"]"></script>
