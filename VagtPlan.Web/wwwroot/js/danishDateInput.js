@@ -58,9 +58,18 @@ window.vagtPlanDateInput = (function () {
             instances.set(element, fp);
 
             if (disabled) {
-                fp.set("disable", true);
+                // flatpickr expects an array or function for "disable" — passing a boolean causes
+                // a JS error (e.slice is not a function). Disable all dates via a function and
+                // also disable the input element to prevent interaction.
+                fp.set("disable", [function () { return true; }]);
+                if (fp.input) {
+                    fp.input.disabled = true;
+                }
             } else {
                 fp.set("disable", [isWeekend]);
+                if (fp.input) {
+                    fp.input.disabled = false;
+                }
             }
         },
 
@@ -83,7 +92,19 @@ window.vagtPlanDateInput = (function () {
                 return;
             }
 
-            fp.set("disable", disabled ? true : [isWeekend]);
+            // Do not pass a boolean to flatpickr's "disable" option. Use a function that
+            // always returns true to disable all dates, and toggle the input's disabled state.
+            if (disabled) {
+                fp.set("disable", [function () { return true; }]);
+                if (fp.input) {
+                    fp.input.disabled = true;
+                }
+            } else {
+                fp.set("disable", [isWeekend]);
+                if (fp.input) {
+                    fp.input.disabled = false;
+                }
+            }
         },
 
         destroy: function (element) {
