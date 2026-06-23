@@ -29,7 +29,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:80
-      - ApiBaseUrl=http://api:3000/
+      - ApiBaseUrl=http://api:80/
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
     ports:
       - "8080:80"
