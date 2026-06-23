@@ -149,11 +149,29 @@ public class Program
 
         var app = builder.Build();
 
-        using (var scope = app.Services.CreateScope())
+        var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+        const int maxDbStartupAttempts = 10;
+        var dbStartupDelay = TimeSpan.FromSeconds(5);
+
+        for (var attempt = 1; attempt <= maxDbStartupAttempts; attempt++)
         {
-            var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
-            // db.Database.MigrateAsync().GetAwaiter().GetResult();
-            AdminUserSeeder.SeedAsync(db, app.Configuration).GetAwaiter().GetResult();
+            try
+            {
+                using var scope = app.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
+                db.Database.Migrate();
+                AdminUserSeeder.SeedAsync(db, app.Configuration).GetAwaiter().GetResult();
+                break;
+            }
+            catch (Exception ex) when (attempt < maxDbStartupAttempts)
+            {
+                startupLogger.LogWarning(ex,
+                    "Database was not ready on startup attempt {Attempt}/{MaxAttempts}. Retrying in {DelaySeconds}s.",
+                    attempt,
+                    maxDbStartupAttempts,
+                    dbStartupDelay.TotalSeconds);
+                Task.Delay(dbStartupDelay).GetAwaiter().GetResult();
+            }
         }
 
         // Used for SignalR
