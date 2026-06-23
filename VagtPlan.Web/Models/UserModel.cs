@@ -19,11 +19,6 @@
         public required int UserRoleId { get; set; }
     }
 
-    public class LoginDto
-    {
-        public required string Name { get; set; }
-        public required string Password { get; set; }
-    }
     public class UserRequestDto
     {
         public int Id { get; set; }

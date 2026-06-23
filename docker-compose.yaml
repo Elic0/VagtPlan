@@ -44,8 +44,6 @@ services:
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Expire__Minutes=${JWT_EXPIRE_MINUTES}
-      - ADMIN__AUTH__USERNAME=${ADMIN_AUTH_USERNAME}
-      - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
       # Enable developer logs and host diagnostics to capture native crashes
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80

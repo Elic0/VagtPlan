@@ -63,12 +63,6 @@ namespace VagtPlan.Web.Services
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task LoginAsync(LoginDto dto, CancellationToken cancellationToken = default)
-        {
-            var response = await _httpClient.PostAsJsonAsync("api/User/login", dto, cancellationToken);
-            response.EnsureSuccessStatusCode();
-        }
-
         private void EnsureAuthorizedRequest()
         {
             if (!_authState.IsAuthenticated || string.IsNullOrWhiteSpace(_authState.Token))

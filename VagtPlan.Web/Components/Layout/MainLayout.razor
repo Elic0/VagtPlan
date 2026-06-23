@@ -6,11 +6,18 @@
 @inject IJSRuntime JS
 
 <div class="app-shell">
-    <NavMenu />
+    @if (ShouldRenderProtectedContent)
+    {
+        <NavMenu />
+    }
 
     <main class="app-main">
         <div class="app-content">
-            @if (_authReady)
+            @if (ShouldRenderProtectedContent)
+            {
+                @Body
+            }
+            else if (_authReady && IsLoginPage)
             {
                 @Body
             }
@@ -33,6 +40,8 @@
 
 @code {
     private bool _authReady;
+    private bool IsLoginPage => Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/').ToLowerInvariant() == "login";
+    private bool ShouldRenderProtectedContent => _authReady && AuthState.IsAuthenticated;
 
     protected override void OnInitialized()
     {
@@ -67,16 +76,15 @@
 
     private void EnforceLogin()
     {
-        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/').ToLowerInvariant();
-        var isLoginPage = relativePath == "login";
+        var isLoginPage = IsLoginPage;
 
         if (!AuthState.IsAuthenticated && !isLoginPage)
         {
-            Navigation.NavigateTo("/login");
+            Navigation.NavigateTo("/login", replace: true);
         }
         else if (AuthState.IsAuthenticated && isLoginPage)
         {
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/", replace: true);
         }
     }
 
