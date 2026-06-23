@@ -6,7 +6,7 @@ namespace ApiService.Services;
 
 public static class AdminUserSeeder
 {
-    public const string AdminUsername = "admin";
+    public const string AdminUsername = "Admin";
     public const string AdminPassword = "Password1!";
     public const string AdminRoleName = "Admin";
     public const string DefaultDepartmentName = "Administration";
