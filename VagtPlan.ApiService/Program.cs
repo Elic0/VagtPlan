@@ -59,15 +59,35 @@ public class Program
         builder.Services.AddScoped<JwtService>();
 
         // Konfigurer JWT Authentication
-        var jwtSecretKey = Configuration["Jwt:SecretKey"]
-            ?? Environment.GetEnvironmentVariable("Jwt:SecretKey")
-            ?? throw new InvalidOperationException("JWT secret key not configured.");
+        string? jwtSecretKey = Configuration["Jwt:SecretKey"];
+        if (string.IsNullOrWhiteSpace(jwtSecretKey))
+        {
+            jwtSecretKey = Environment.GetEnvironmentVariable("Jwt__SecretKey");
+        }
+        if (string.IsNullOrWhiteSpace(jwtSecretKey))
+        {
+            throw new InvalidOperationException("JWT secret key not configured. Set 'Jwt__SecretKey' environment variable or 'Jwt:SecretKey' in configuration.");
+        }
 
-        var jwtIssuer = Configuration["Jwt:Issuer"]
-            ?? Environment.GetEnvironmentVariable("Jwt:Issuer");
+        string? jwtIssuer = Configuration["Jwt:Issuer"];
+        if (string.IsNullOrWhiteSpace(jwtIssuer))
+        {
+            jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer");
+        }
+        if (string.IsNullOrWhiteSpace(jwtIssuer))
+        {
+            throw new InvalidOperationException("JWT issuer not configured. Set 'Jwt__Issuer' environment variable or 'Jwt:Issuer' in configuration.");
+        }
 
-        var jwtAudience = Configuration["Jwt:Audience"]
-            ?? Environment.GetEnvironmentVariable("Jwt:Audience");
+        string? jwtAudience = Configuration["Jwt:Audience"];
+        if (string.IsNullOrWhiteSpace(jwtAudience))
+        {
+            jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience");
+        }
+        if (string.IsNullOrWhiteSpace(jwtAudience))
+        {
+            throw new InvalidOperationException("JWT audience not configured. Set 'Jwt__Audience' environment variable or 'Jwt:Audience' in configuration.");
+        }
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey));
 
@@ -149,7 +169,7 @@ public class Program
             options.RoutePrefix = "swagger"; // Tilgængelig på /swagger
         });
 
-        app.UseStaticFiles(); // Vigtig for SwaggerBootstrap pakken
+        app.UseStaticFiles();
 
 
         // Enable Scalar UI (moderne alternativ til Swagger UI)
