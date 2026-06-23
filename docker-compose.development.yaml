@@ -11,8 +11,6 @@ services:
       - JWT__ISSUER=${JWT_ISSUER}
       - JWT__SECRET=${JWT_SECRET}
       - JWT__EXPIRE__MINUTES=${JWT_EXPIRE_MINUTES}
-      - ADMIN__AUTH__USERNAME=${ADMIN_AUTH_USERNAME}
-      - ADMIN__AUTH__PASSWORD=${ADMIN_AUTH_PASSWORD}
     networks:
       - default
     ports:

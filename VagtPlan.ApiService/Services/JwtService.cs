@@ -1,16 +1,13 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using ApiService.DTOS;
+using ApiService.Models;
 using Microsoft.IdentityModel.Tokens;
 
 namespace ApiService.Services;
 
 public class JwtService
 {
-    private const string DefaultAdminUsername = "Admin";
-    private const string DefaultAdminPassword = "Password1!";
-
     private readonly IConfiguration _configuration;
 
     public JwtService(IConfiguration configuration)
@@ -18,19 +15,7 @@ public class JwtService
         _configuration = configuration;
     }
 
-    public bool ValidateAdminCredentials(LoginRequestDTO request)
-    {
-        var configuredUsername = _configuration["AdminAuth:Username"] ?? DefaultAdminUsername;
-        var configuredPassword = _configuration["AdminAuth:Password"] ?? DefaultAdminPassword;
-
-        var providedUsername = request.Username?.Trim() ?? string.Empty;
-        var providedPassword = request.Password?.Trim() ?? string.Empty;
-
-        return string.Equals(providedUsername, configuredUsername, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(providedPassword, configuredPassword, StringComparison.Ordinal);
-    }
-
-    public string GenerateAdminToken()
+    public string GenerateToken(User user)
     {
         var jwtSecretKey = _configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("JWT secret key not configured.");
@@ -42,12 +27,14 @@ public class JwtService
             ? configuredMinutes
             : 120;
 
+        var roleName = user.UserRole?.Name ?? "User";
+
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, "admin"),
-            new(JwtRegisteredClaimNames.UniqueName, DefaultAdminUsername),
-            new(ClaimTypes.Name, DefaultAdminUsername),
-            new(ClaimTypes.Role, "Admin"),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.UniqueName, user.Name),
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.Role, roleName),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

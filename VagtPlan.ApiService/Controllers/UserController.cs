@@ -140,19 +140,6 @@ namespace ApiService.Controllers
             return NoContent();
         }
 
-        // LOGIN: api/Users/login
-        [HttpPost("login")]
-        public async Task<ActionResult<UserDTO>> Login([FromBody] LoginDTO loginDTO)
-        {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Name == loginDTO.Name && u.Password == loginDTO.Password);
-            if (user == null)
-            {
-                return Unauthorized();
-            }
-            return Ok(user);
-        }
-
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.Id == id);
