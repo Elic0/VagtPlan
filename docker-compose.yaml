@@ -29,7 +29,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:80
-      - ApiBaseUrl=http://api:3000/
+      - ApiBaseUrl=http://api:80/
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
     ports:
       - "8080:80"
@@ -44,6 +44,10 @@ services:
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Expire__Minutes=${JWT_EXPIRE_MINUTES}
+      - ADMIN_AUTH_USERNAME=${ADMIN_AUTH_USERNAME}
+      - ADMIN_AUTH_PASSWORD=${ADMIN_AUTH_PASSWORD}
+      - ADMIN_AUTH_ROLE_NAME=${ADMIN_AUTH_ROLE_NAME}
+      - ADMIN_AUTH_DEPARTMENT_NAME=${ADMIN_AUTH_DEPARTMENT_NAME}
       # Enable developer logs and host diagnostics to capture native crashes
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80

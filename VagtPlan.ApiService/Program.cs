@@ -153,7 +153,7 @@ public class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
             db.Database.Migrate();
-            AdminUserSeeder.SeedAsync(db).GetAwaiter().GetResult();
+            AdminUserSeeder.SeedAsync(db, app.Configuration).GetAwaiter().GetResult();
         }
 
         // Used for SignalR
