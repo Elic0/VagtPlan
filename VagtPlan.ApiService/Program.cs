@@ -152,7 +152,7 @@ public class Program
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
-            db.Database.MigrateAsync().GetAwaiter().GetResult();
+            // db.Database.MigrateAsync().GetAwaiter().GetResult();
             AdminUserSeeder.SeedAsync(db, app.Configuration).GetAwaiter().GetResult();
         }
 
