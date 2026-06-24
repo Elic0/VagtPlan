@@ -17,9 +17,10 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
+      - PGDATA=/var/lib/postgresql/data
     volumes:
-      - db-data:/var/lib/postgresql
+      # Mount parent dir so existing data in volume/data/ is preserved across deploys.
+      - vagtplan_postgres_data:/var/lib/postgresql
     ports:
       - "5432:5432"
     healthcheck:
@@ -46,7 +47,7 @@ services:
       context: .
       dockerfile: VagtPlan.ApiService/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Jwt__Audience=${JWT_AUDIENCE}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
@@ -72,4 +73,7 @@ networks:
     driver: bridge
 
 volumes:
-  db-data:
+  vagtplan_postgres_data:
+    # Fixed name so Portainer redeploys always attach the same volume.
+    # If you already have data in an older volume (e.g. vagtplan_db-data), set name to that here once.
+    name: vagtplan_postgres_data
