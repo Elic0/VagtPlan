@@ -150,29 +150,7 @@ public class Program
         var app = builder.Build();
 
         var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-        const int maxDbStartupAttempts = 10;
-        var dbStartupDelay = TimeSpan.FromSeconds(5);
-
-        for (var attempt = 1; attempt <= maxDbStartupAttempts; attempt++)
-        {
-            try
-            {
-                using var scope = app.Services.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
-                db.Database.Migrate();
-                AdminUserSeeder.SeedAsync(db, app.Configuration).GetAwaiter().GetResult();
-                break;
-            }
-            catch (Exception ex) when (attempt < maxDbStartupAttempts)
-            {
-                startupLogger.LogWarning(ex,
-                    "Database was not ready on startup attempt {Attempt}/{MaxAttempts}. Retrying in {DelaySeconds}s.",
-                    attempt,
-                    maxDbStartupAttempts,
-                    dbStartupDelay.TotalSeconds);
-                Task.Delay(dbStartupDelay).GetAwaiter().GetResult();
-            }
-        }
+        RunDatabaseStartup(app, startupLogger).GetAwaiter().GetResult();
 
         // Used for SignalR
         app.UseResponseCompression();
@@ -232,5 +210,59 @@ public class Program
         });
 
         app.Run();
+    }
+
+    private static async Task RunDatabaseStartup(WebApplication app, ILogger logger)
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDBContext>();
+
+        await WaitForDatabaseAsync(db, logger);
+
+        db.Database.Migrate();
+        await AdminUserSeeder.SeedAsync(db, app.Configuration);
+    }
+
+    private static async Task WaitForDatabaseAsync(
+        AppDBContext db,
+        ILogger logger,
+        CancellationToken cancellationToken = default)
+    {
+        const int maxAttempts = 10;
+        var delay = TimeSpan.FromSeconds(1);
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                if (await db.Database.CanConnectAsync(cancellationToken))
+                {
+                    if (attempt > 1)
+                    {
+                        logger.LogInformation(
+                            "Database connection established on attempt {Attempt}.",
+                            attempt);
+                    }
+
+                    return;
+                }
+            }
+            catch (Exception ex) when (attempt < maxAttempts)
+            {
+                logger.LogWarning(ex,
+                    "Database was not ready on attempt {Attempt}/{MaxAttempts}. Retrying in {DelaySeconds}s.",
+                    attempt,
+                    maxAttempts,
+                    delay.TotalSeconds);
+            }
+
+            if (attempt < maxAttempts)
+            {
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Database did not become available within {maxAttempts * delay.TotalSeconds} seconds.");
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -11,45 +10,56 @@ namespace ApiService.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "StartDate",
-                table: "SpecialWishes",
-                type: "timestamp with time zone",
-                nullable: true,
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone");
+            migrationBuilder.Sql("""
+                DO $EF$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'SpecialWishes' AND column_name = 'StartDate'
+                          AND is_nullable = 'NO'
+                    ) THEN
+                        ALTER TABLE "SpecialWishes" ALTER COLUMN "StartDate" DROP NOT NULL;
+                    END IF;
 
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "EndDate",
-                table: "SpecialWishes",
-                type: "timestamp with time zone",
-                nullable: true,
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone");
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'SpecialWishes' AND column_name = 'EndDate'
+                          AND is_nullable = 'NO'
+                    ) THEN
+                        ALTER TABLE "SpecialWishes" ALTER COLUMN "EndDate" DROP NOT NULL;
+                    END IF;
+                END
+                $EF$;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "StartDate",
-                table: "SpecialWishes",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone",
-                oldNullable: true);
+            migrationBuilder.Sql("""
+                DO $EF$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'SpecialWishes')
+                       AND NOT EXISTS (SELECT 1 FROM "SpecialWishes" LIMIT 1) THEN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_schema = 'public' AND table_name = 'SpecialWishes' AND column_name = 'StartDate'
+                              AND is_nullable = 'YES'
+                        ) THEN
+                            ALTER TABLE "SpecialWishes" ALTER COLUMN "StartDate" SET NOT NULL;
+                        END IF;
 
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "EndDate",
-                table: "SpecialWishes",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone",
-                oldNullable: true);
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_schema = 'public' AND table_name = 'SpecialWishes' AND column_name = 'EndDate'
+                              AND is_nullable = 'YES'
+                        ) THEN
+                            ALTER TABLE "SpecialWishes" ALTER COLUMN "EndDate" SET NOT NULL;
+                        END IF;
+                    END IF;
+                END
+                $EF$;
+                """);
         }
     }
 }

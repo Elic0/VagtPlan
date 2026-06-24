@@ -22,6 +22,13 @@ services:
       - db-data:/var/lib/postgresql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
   web:
     build: .
     depends_on:
@@ -55,7 +62,8 @@ services:
       - COREHOST_TRACE_VERBOSITY=4
       - DOTNET_EnableDiagnostics=1
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:80"
 

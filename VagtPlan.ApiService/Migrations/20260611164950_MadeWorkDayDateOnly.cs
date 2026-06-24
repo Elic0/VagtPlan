@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -11,25 +10,41 @@ namespace ApiService.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<DateOnly>(
-                name: "Date",
-                table: "Workdays",
-                type: "date",
-                nullable: false,
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone");
+            migrationBuilder.Sql("""
+                DO $EF$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'Workdays' AND column_name = 'Date'
+                          AND udt_name = 'timestamptz'
+                    ) THEN
+                        ALTER TABLE "Workdays"
+                            ALTER COLUMN "Date" TYPE date
+                            USING "Date"::date;
+                    END IF;
+                END
+                $EF$;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "Date",
-                table: "Workdays",
-                type: "timestamp with time zone",
-                nullable: false,
-                oldClrType: typeof(DateOnly),
-                oldType: "date");
+            migrationBuilder.Sql("""
+                DO $EF$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'Workdays' AND column_name = 'Date'
+                          AND udt_name = 'date'
+                    ) AND NOT EXISTS (SELECT 1 FROM "Workdays" LIMIT 1) THEN
+                        ALTER TABLE "Workdays"
+                            ALTER COLUMN "Date" TYPE timestamp with time zone
+                            USING "Date"::timestamp with time zone;
+                    END IF;
+                END
+                $EF$;
+                """);
         }
     }
 }
