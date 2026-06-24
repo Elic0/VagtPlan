@@ -221,16 +221,6 @@ public class Program
 
         db.Database.Migrate();
         await AdminUserSeeder.SeedAsync(db, app.Configuration);
-
-        var userCount = await db.Users.CountAsync();
-        var departmentCount = await db.Departments.CountAsync();
-        var appliedMigrations = (await db.Database.GetAppliedMigrationsAsync()).ToList();
-        logger.LogInformation(
-            "Database ready. Database={Database}, Users={UserCount}, Departments={DepartmentCount}, AppliedMigrations={MigrationCount}",
-            db.Database.GetDbConnection().Database,
-            userCount,
-            departmentCount,
-            appliedMigrations.Count);
     }
 
     private static async Task WaitForDatabaseAsync(
